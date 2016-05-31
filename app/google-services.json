@@ -1,0 +1,107 @@
+{
+  "project_info": {
+    "project_number": "665624256153",
+    "firebase_url": "https://project-37085275205282588.firebaseio.com",
+    "project_id": "project-37085275205282588",
+    "storage_bucket": "project-37085275205282588.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:665624256153:android:ebdfbd06aa4de572",
+        "android_client_info": {
+          "package_name": "com.felixsu.skydrop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "665624256153-rvajr9ephkb153gp2e22n8e3j8gcs9md.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.felixsu.skydrop",
+            "certificate_hash": "451CC078FCB22F119312593F7F190708DDDD3422"
+          }
+        },
+        {
+          "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeKOC0N05lhtwPAVKuDaaG1dnOw_k2bkw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:665624256153:android:e33dcc2e975e8811",
+        "android_client_info": {
+          "package_name": "com.felixsu.skyseeker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "665624256153-glkt41kb7r25i862ppn95qvju96228e8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.felixsu.skyseeker",
+            "certificate_hash": "ED68F2D4DEBCBCB2AC7EBAA924A886A3C21D33C6"
+          }
+        },
+        {
+          "client_id": "665624256153-qedjrfmncpjja8q814398ds0nm9gqkp5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.felixsu.skyseeker",
+            "certificate_hash": "451CC078FCB22F119312593F7F190708DDDD3422"
+          }
+        },
+        {
+          "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeKOC0N05lhtwPAVKuDaaG1dnOw_k2bkw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
