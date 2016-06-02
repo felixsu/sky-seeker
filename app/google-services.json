@@ -59,19 +59,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "665624256153-glkt41kb7r25i862ppn95qvju96228e8.apps.googleusercontent.com",
+          "client_id": "665624256153-ej4r8fr55carrp6cjdjdh4aagi09e2gr.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.felixsu.skyseeker",
-            "certificate_hash": "ED68F2D4DEBCBCB2AC7EBAA924A886A3C21D33C6"
-          }
-        },
-        {
-          "client_id": "665624256153-qedjrfmncpjja8q814398ds0nm9gqkp5.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.felixsu.skyseeker",
-            "certificate_hash": "451CC078FCB22F119312593F7F190708DDDD3422"
+            "certificate_hash": "B5AE32CE796373FD9968C4A4AC3111B9F7790FBC"
           }
         },
         {
