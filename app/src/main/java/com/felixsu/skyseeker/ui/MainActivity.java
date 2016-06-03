@@ -1,7 +1,7 @@
 package com.felixsu.skyseeker.ui;
 
 import android.content.Intent;
-import android.net.Uri;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
@@ -14,13 +14,19 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixsu.skyseeker.R;
-import com.felixsu.skyseeker.listener.OnFragmentInteractionListener;
+import com.felixsu.skyseeker.SkySeekerApp;
+import com.felixsu.skyseeker.constant.Constants;
+import com.felixsu.skyseeker.listener.OnForecastUpdatedListener;
+import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.ui.fragment.MainFragment;
 import com.google.firebase.auth.FirebaseAuth;
 
+import javax.inject.Inject;
+
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, OnFragmentInteractionListener {
+        implements NavigationView.OnNavigationItemSelectedListener, OnForecastUpdatedListener {
 
     public static final String TAG = MainActivity.class.getName();
 
@@ -28,12 +34,39 @@ public class MainActivity extends AppCompatActivity
     private NavigationView mNavigationView;
     private FragmentManager mFragmentManager;
 
+    @Inject protected SharedPreferences mSharedPreferences;
+    @Inject protected ObjectMapper mObjectMapper;
+
+    private Forecast mForecast;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ((SkySeekerApp)getApplication()).getUtilComponent().inject(this);
         initDrawer();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initData();
         initFragment();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
     }
 
     @Override
@@ -77,8 +110,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-
+    public void onUpdate(Forecast forecast) {
+        mForecast = forecast;
     }
 
     private void startLoginActivity() {
@@ -109,7 +142,40 @@ public class MainActivity extends AppCompatActivity
     private void initFragment(){
 
         mFragmentManager = getSupportFragmentManager();
-        mFragmentManager.beginTransaction().add(R.id.fragmentContainer, MainFragment.newInstance(), MainFragment.TAG).commit();
+        mFragmentManager.beginTransaction().add(R.id.fragmentContainer, MainFragment.newInstance(mForecast), MainFragment.TAG).commit();
 
+    }
+
+    private void initData(){
+        try {
+            if (mSharedPreferences.contains(Constants.PREFERENCE_FORECAST)) {
+                String storedForecast = mSharedPreferences.getString(Constants.PREFERENCE_FORECAST, null);
+                if (storedForecast != null) {
+                    mForecast = mObjectMapper.readValue(storedForecast, Forecast.class);
+                } else {
+                    mForecast = null;
+                }
+            } else {
+                mForecast = null;
+            }
+        } catch (Exception e){
+            Log.e(TAG, e.getMessage(), e);
+        }
+    }
+
+    private void storeData(){
+        String forecastJson = null;
+        try {
+            if (mForecast != null) {
+                forecastJson = mObjectMapper.writeValueAsString(mForecast);
+            } else {
+                Log.i(TAG, "forecast data null");
+            }
+        } catch (Exception e){
+            Log.e(TAG, e.getMessage(), e);
+        }
+
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        editor.putString(Constants.PREFERENCE_FORECAST, forecastJson);
     }
 }
