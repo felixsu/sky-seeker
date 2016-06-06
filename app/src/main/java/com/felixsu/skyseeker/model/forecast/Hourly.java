@@ -44,6 +44,7 @@ public class Hourly implements Serializable {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Data implements Serializable {
 
         @JsonProperty("time")
@@ -77,7 +78,6 @@ public class Hourly implements Serializable {
         @JsonProperty("ozone")
         public Double ozone;
         @JsonProperty("precipType")
-        @JsonIgnoreProperties(ignoreUnknown = true)
         private String mPrecipType;
 
         public Integer getTime() {

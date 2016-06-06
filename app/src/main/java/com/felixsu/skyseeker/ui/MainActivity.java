@@ -3,6 +3,8 @@ package com.felixsu.skyseeker.ui;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
@@ -21,12 +23,19 @@ import com.felixsu.skyseeker.constant.Constants;
 import com.felixsu.skyseeker.listener.OnForecastUpdatedListener;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.ui.fragment.MainFragment;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 
 import javax.inject.Inject;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, OnForecastUpdatedListener {
+        implements NavigationView.OnNavigationItemSelectedListener,
+        OnForecastUpdatedListener,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
 
     public static final String TAG = MainActivity.class.getName();
 
@@ -37,6 +46,7 @@ public class MainActivity extends AppCompatActivity
     @Inject protected SharedPreferences mSharedPreferences;
     @Inject protected ObjectMapper mObjectMapper;
 
+    private GoogleApiClient mGoogleApiClient;
     private Forecast mForecast;
 
     @Override
@@ -44,14 +54,18 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ((SkySeekerApp)getApplication()).getUtilComponent().inject(this);
+
+        initData();
+        initFragment();
         initDrawer();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        initData();
-        initFragment();
+        if (mGoogleApiClient != null) {
+            mGoogleApiClient.connect();
+        }
     }
 
     @Override
@@ -67,6 +81,11 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStop() {
         super.onStop();
+        if (mGoogleApiClient != null) {
+            mGoogleApiClient.disconnect();
+        }
+
+        storeData();
     }
 
     @Override
@@ -114,6 +133,21 @@ public class MainActivity extends AppCompatActivity
         mForecast = forecast;
     }
 
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
     private void startLoginActivity() {
         Intent intent = new Intent(this, LoginActivity.class);
         intent
@@ -147,6 +181,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void initData(){
+        initGoogleApiClient();
         try {
             if (mSharedPreferences.contains(Constants.PREFERENCE_FORECAST)) {
                 String storedForecast = mSharedPreferences.getString(Constants.PREFERENCE_FORECAST, null);
@@ -161,6 +196,14 @@ public class MainActivity extends AppCompatActivity
         } catch (Exception e){
             Log.e(TAG, e.getMessage(), e);
         }
+    }
+
+    private void initGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
     }
 
     private void storeData(){
@@ -178,4 +221,5 @@ public class MainActivity extends AppCompatActivity
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putString(Constants.PREFERENCE_FORECAST, forecastJson);
     }
+
 }

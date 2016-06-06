@@ -5,7 +5,11 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.felixsu.skyseeker.constant.Constants;
 import com.felixsu.skyseeker.service.ForecastService;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 import javax.inject.Singleton;
 

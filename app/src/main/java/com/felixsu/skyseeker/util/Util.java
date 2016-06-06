@@ -9,7 +9,6 @@ import android.view.inputmethod.InputMethodManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Util {
-    private final static ObjectMapper mapper = new ObjectMapper();
 
     public static String base64Encode(byte[] input, int len) {
         return Base64.encodeToString(input, 0, len, Base64.CRLF);

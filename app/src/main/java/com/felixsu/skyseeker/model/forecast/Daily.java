@@ -44,6 +44,7 @@ public class Daily implements Serializable {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Data implements Serializable {
 
         @JsonProperty("time")
@@ -99,7 +100,6 @@ public class Daily implements Serializable {
         @JsonProperty("precipIntensityMaxTime")
         private Integer mPrecipIntensityMaxTime;
         @JsonProperty("precipType")
-        @JsonIgnoreProperties(ignoreUnknown = true)
         private String mPrecipType;
 
         public Integer getTime() {
