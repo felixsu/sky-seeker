@@ -59,6 +59,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "665624256153-82gcgcsqdfguuemu8omfeih8tdfbiljh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.felixsu.skyseeker",
+            "certificate_hash": "ED68F2D4DEBCBCB2AC7EBAA924A886A3C21D33C6"
+          }
+        },
+        {
           "client_id": "665624256153-ej4r8fr55carrp6cjdjdh4aagi09e2gr.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

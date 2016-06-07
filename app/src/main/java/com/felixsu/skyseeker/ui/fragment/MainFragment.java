@@ -2,7 +2,6 @@ package com.felixsu.skyseeker.ui.fragment;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -10,7 +9,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,23 +32,51 @@ import okhttp3.Response;
 public class MainFragment extends Fragment {
 
     public static final String TAG = MainFragment.class.getName();
-
-    TextView mTemperatureLabel;
-    TextView mSummaryLabel;
-    EditText mLongitudeField;
-    EditText mLatitudeField;
-    Button mGetForecastButton;
-
-    Forecast mForecast;
-
     @Inject
     protected ForecastService mForecastService;
     @Inject
     protected SharedPreferences mSharedPreferences;
     @Inject
     protected ObjectMapper mObjectMapper;
-
+    TextView mTemperatureLabel;
+    TextView mSummaryLabel;
+    Button mGetForecastButton;
+    Forecast mForecast;
     private OnForecastUpdatedListener mListener;
+    private Callback mCallback = new Callback() {
+        @Override
+        public void onFailure(Call call, IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+
+        @Override
+        public void onResponse(Call call, Response response) throws IOException {
+            if (response.code() == HttpURLConnection.HTTP_OK) {
+                String body = response.body().string();
+                mForecast = mObjectMapper.readValue(body, Forecast.class);
+
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateViewValue();
+                    }
+                });
+
+                if (mListener != null) {
+                    mListener.onUpdate(mForecast);
+                    Log.d(TAG, "forecast updated");
+                }
+            } else {
+                Log.e(TAG, "got response status" + response.code() + "-" + response.body().string());
+            }
+        }
+    };
+    private View.OnClickListener getForecastButtonListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            updateWeather();
+        }
+    };
 
     public MainFragment() {
     }
@@ -121,42 +147,6 @@ public class MainFragment extends Fragment {
         }
     }
 
-    private Callback mCallback = new Callback() {
-        @Override
-        public void onFailure(Call call, IOException e) {
-            Log.e(TAG, e.getMessage());
-        }
-
-        @Override
-        public void onResponse(Call call, Response response) throws IOException {
-            if (response.code() == HttpURLConnection.HTTP_OK) {
-                String body = response.body().string();
-                mForecast = mObjectMapper.readValue(body, Forecast.class);
-
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        updateViewValue();
-                    }
-                });
-
-                if (mListener != null) {
-                    mListener.onUpdate(mForecast);
-                    Log.d(TAG, "forecast updated");
-                }
-            } else {
-                Log.e(TAG, "got response status" + response.code() + "-" + response.body().string());
-            }
-        }
-    };
-
-    private View.OnClickListener getForecastButtonListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            updateWeather();
-        }
-    };
-
     private void updateWeather(){
         mForecastService.getForecast(new ForecastRequest(-6.193, 106.87, ForecastRequest.SI_UNIT), mCallback);
     }
@@ -164,8 +154,6 @@ public class MainFragment extends Fragment {
     private void initView(View rootView){
         mTemperatureLabel = (TextView) rootView.findViewById(R.id.label_temperature);
         mSummaryLabel = (TextView) rootView.findViewById(R.id.label_summary);
-        mLongitudeField = (EditText) rootView.findViewById(R.id.field_longitude);
-        mLatitudeField = (EditText) rootView.findViewById(R.id.field_latitude);
         mGetForecastButton = (Button) rootView.findViewById(R.id.button_getForecast);
 
         mGetForecastButton.setOnClickListener(getForecastButtonListener);

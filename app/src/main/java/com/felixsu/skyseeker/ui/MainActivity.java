@@ -1,12 +1,18 @@
 package com.felixsu.skyseeker.ui;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -15,6 +21,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixsu.skyseeker.R;
@@ -23,9 +30,11 @@ import com.felixsu.skyseeker.constant.Constants;
 import com.felixsu.skyseeker.listener.OnForecastUpdatedListener;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.ui.fragment.MainFragment;
-import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -35,19 +44,28 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         OnForecastUpdatedListener,
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
 
     public static final String TAG = MainActivity.class.getName();
+    private static final int PLAY_SERVICE_RESOLUTION_REQUEST = 1000;
+    private static final int PERMISSION_LOCATION_COARSE_REQUEST = 1002;
+    private static final int PERMISSION_LOCATION_FINE_REQUEST = 1003;
 
+    private static final int UPDATE_INTERVAL = 10000;
+    private static final int FASTEST_INTERVAL = 5000;
+    private static final int DISPLACEMENT = 10;
+    @Inject protected SharedPreferences mSharedPreferences;
+    @Inject protected ObjectMapper mObjectMapper;
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
     private FragmentManager mFragmentManager;
-
-    @Inject protected SharedPreferences mSharedPreferences;
-    @Inject protected ObjectMapper mObjectMapper;
-
     private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
     private Forecast mForecast;
+    private Location mLastLocation;
+    private boolean mRequestLocationUpdate = true;
+    private boolean mIsRequestingPermission = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,9 +73,13 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         ((SkySeekerApp)getApplication()).getUtilComponent().inject(this);
 
-        initData();
-        initFragment();
-        initDrawer();
+        if (isGooglePlayServiceAvailable()) {
+            Log.d(TAG, "google play service is available");
+            initData();
+            initFragment();
+            initDrawer();
+        }
+
     }
 
     @Override
@@ -71,11 +93,18 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
+
+        isGooglePlayServiceAvailable();
+        if (mGoogleApiClient.isConnected() && mRequestLocationUpdate) {
+            startLocationUpdates();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+
+        stopLocationUpdates();
     }
 
     @Override
@@ -85,7 +114,7 @@ public class MainActivity extends AppCompatActivity
             mGoogleApiClient.disconnect();
         }
 
-        storeData();
+        storeForecastData();
     }
 
     @Override
@@ -135,17 +164,87 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+        Log.i(TAG, "connection failed " + connectionResult.getErrorCode());
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+        Log.i(TAG, "google api connected");
+        displayLocation();
 
+        if (mRequestLocationUpdate) {
+            startLocationUpdates();
+        }
     }
 
     @Override
     public void onConnectionSuspended(int i) {
+        mGoogleApiClient.connect();
+    }
 
+    @Override
+    public void onLocationChanged(Location location) {
+        mLastLocation = location;
+
+        Toast.makeText(this, "location changed !", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        mIsRequestingPermission = false;
+        switch (requestCode) {
+            case PERMISSION_LOCATION_COARSE_REQUEST: {
+                if ((grantResults.length > 0) && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    requestPermission();
+                } else {
+                    Toast.makeText(this, "App will not working, please close", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            }
+            case PERMISSION_LOCATION_FINE_REQUEST: {
+                if ((grantResults.length > 0) && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    requestPermission();
+                } else {
+                    Toast.makeText(this, "App will not working, please close", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            }
+            default:
+                break;
+        }
+
+    }
+
+    private boolean isGooglePlayServiceAvailable() {
+        int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (GooglePlayServicesUtil.isUserRecoverableError(resultCode)) {
+                GooglePlayServicesUtil.getErrorDialog(resultCode, this, PLAY_SERVICE_RESOLUTION_REQUEST).show();
+            } else {
+                Toast.makeText(this, "device not supported", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+            return false;
+        }
+        return true;
+    }
+
+    protected void startLocationUpdates() {
+        if (Build.VERSION.SDK_INT >= 23 &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (!mIsRequestingPermission) {
+                requestPermission();
+            }
+            Log.i(TAG, "some permission not granted");
+            return;
+        }
+        Log.d(TAG, "Location updates started");
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+    }
+
+    protected void stopLocationUpdates() {
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
     }
 
     private void startLoginActivity() {
@@ -173,6 +272,26 @@ public class MainActivity extends AppCompatActivity
         mNavigationView.setNavigationItemSelectedListener(this);
     }
 
+    private void displayLocation() {
+        if (Build.VERSION.SDK_INT >= 23 &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermission();
+            Log.i(TAG, "some permission not granted");
+            return;
+        }
+
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if (mLastLocation != null) {
+            double latitude = mLastLocation.getLatitude();
+            double longitude = mLastLocation.getLongitude();
+
+            Log.i(TAG, "last location received " + latitude + " " + longitude);
+        } else {
+            Log.i(TAG, "couldn't get last location");
+        }
+    }
+
     private void initFragment(){
 
         mFragmentManager = getSupportFragmentManager();
@@ -182,20 +301,8 @@ public class MainActivity extends AppCompatActivity
 
     private void initData(){
         initGoogleApiClient();
-        try {
-            if (mSharedPreferences.contains(Constants.PREFERENCE_FORECAST)) {
-                String storedForecast = mSharedPreferences.getString(Constants.PREFERENCE_FORECAST, null);
-                if (storedForecast != null) {
-                    mForecast = mObjectMapper.readValue(storedForecast, Forecast.class);
-                } else {
-                    mForecast = null;
-                }
-            } else {
-                mForecast = null;
-            }
-        } catch (Exception e){
-            Log.e(TAG, e.getMessage(), e);
-        }
+        initLocationRequest();
+        loadForecastData();
     }
 
     private void initGoogleApiClient() {
@@ -206,7 +313,33 @@ public class MainActivity extends AppCompatActivity
                 .build();
     }
 
-    private void storeData(){
+    private void initLocationRequest() {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationRequest.setSmallestDisplacement(DISPLACEMENT);
+    }
+
+    private void loadForecastData() {
+        try {
+            if (mSharedPreferences.contains(Constants.PREFERENCE_FORECAST)) {
+                String storedForecast = mSharedPreferences.getString(Constants.PREFERENCE_FORECAST, null);
+                if (storedForecast != null) {
+                    mForecast = mObjectMapper.readValue(storedForecast, Forecast.class);
+                    Log.d(TAG, "forecast loaded successfully");
+                } else {
+                    mForecast = null;
+                }
+            } else {
+                mForecast = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
+    }
+
+    private void storeForecastData() {
         String forecastJson = null;
         try {
             if (mForecast != null) {
@@ -219,7 +352,33 @@ public class MainActivity extends AppCompatActivity
         }
 
         SharedPreferences.Editor editor = mSharedPreferences.edit();
-        editor.putString(Constants.PREFERENCE_FORECAST, forecastJson);
+        editor.putString(Constants.PREFERENCE_FORECAST, forecastJson).apply();
+        Log.d(TAG, "forecast stored successfully");
     }
+
+    private void requestPermission() {
+        mIsRequestingPermission = true;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    PERMISSION_LOCATION_COARSE_REQUEST);
+            return;
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSION_LOCATION_FINE_REQUEST);
+            return;
+        }
+        displayLocation();
+        startLocationUpdates();
+        Log.i(TAG, "all permission granted");
+    }
+
 
 }
