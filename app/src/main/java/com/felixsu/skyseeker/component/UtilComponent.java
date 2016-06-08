@@ -3,7 +3,7 @@ package com.felixsu.skyseeker.component;
 import com.felixsu.skyseeker.provider.AppModule;
 import com.felixsu.skyseeker.provider.UtilModule;
 import com.felixsu.skyseeker.ui.MainActivity;
-import com.felixsu.skyseeker.ui.fragment.MainFragment;
+import com.felixsu.skyseeker.ui.fragment.ForecastFragment;
 
 import javax.inject.Singleton;
 
@@ -17,7 +17,7 @@ import dagger.Component;
 @Component(modules = {AppModule.class, UtilModule.class})
 public interface UtilComponent {
 
-    void inject(MainFragment mainFragment);
+    void inject(ForecastFragment forecastFragment);
     void inject(MainActivity mainActivity);
 
 }

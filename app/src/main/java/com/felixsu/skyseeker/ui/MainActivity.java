@@ -27,9 +27,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felixsu.skyseeker.R;
 import com.felixsu.skyseeker.SkySeekerApp;
 import com.felixsu.skyseeker.constant.Constants;
-import com.felixsu.skyseeker.listener.OnForecastUpdatedListener;
+import com.felixsu.skyseeker.listener.ActivityCallbackListener;
 import com.felixsu.skyseeker.model.forecast.Forecast;
-import com.felixsu.skyseeker.ui.fragment.MainFragment;
+import com.felixsu.skyseeker.model.request.ForecastRequest;
+import com.felixsu.skyseeker.service.ForecastService;
+import com.felixsu.skyseeker.ui.fragment.ForecastFragment;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -38,11 +40,18 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+
 import javax.inject.Inject;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
-        OnForecastUpdatedListener,
+        ActivityCallbackListener,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
@@ -55,14 +64,16 @@ public class MainActivity extends AppCompatActivity
     private static final int UPDATE_INTERVAL = 10000;
     private static final int FASTEST_INTERVAL = 5000;
     private static final int DISPLACEMENT = 10;
+    @Inject
+    protected ForecastService mForecastService;
     @Inject protected SharedPreferences mSharedPreferences;
     @Inject protected ObjectMapper mObjectMapper;
+    protected Forecast mForecast;
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
     private FragmentManager mFragmentManager;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
-    private Forecast mForecast;
     private Location mLastLocation;
     private boolean mRequestLocationUpdate = true;
     private boolean mIsRequestingPermission = false;
@@ -158,8 +169,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onUpdate(Forecast forecast) {
-        mForecast = forecast;
+    public void onRequest(ForecastRequest request, int id) {
+        mForecastService.getForecast(request, new ForecastRequestListener(id));
     }
 
     @Override
@@ -295,7 +306,7 @@ public class MainActivity extends AppCompatActivity
     private void initFragment(){
 
         mFragmentManager = getSupportFragmentManager();
-        mFragmentManager.beginTransaction().add(R.id.fragmentContainer, MainFragment.newInstance(mForecast), MainFragment.TAG).commit();
+        mFragmentManager.beginTransaction().add(R.id.fragmentContainer, ForecastFragment.newInstance(mForecast), ForecastFragment.TAG).commit();
 
     }
 
@@ -378,6 +389,31 @@ public class MainActivity extends AppCompatActivity
         displayLocation();
         startLocationUpdates();
         Log.i(TAG, "all permission granted");
+    }
+
+    private class ForecastRequestListener implements Callback {
+
+        private int mId;
+
+        public ForecastRequestListener(int id) {
+            mId = id;
+        }
+
+        @Override
+        public void onFailure(Call call, IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+
+        @Override
+        public void onResponse(Call call, Response response) throws IOException {
+            if (response.code() == HttpURLConnection.HTTP_OK) {
+                String body = response.body().string();
+                mForecast = mObjectMapper.readValue(body, Forecast.class);
+                ((ForecastFragment) mFragmentManager.findFragmentById(mId)).onForecastUpdated(mForecast);
+            } else {
+                Log.e(TAG, "got response status" + response.code() + "-" + response.body().string());
+            }
+        }
     }
 
 
