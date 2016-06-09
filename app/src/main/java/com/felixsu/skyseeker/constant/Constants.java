@@ -9,10 +9,13 @@ public class Constants {
     public static final String FORECAST_FC_SEGMENT = "forecast";
 
     public static final String PREFERENCE_FORECAST = "preference-forecast";
+    public static final String PREFERENCE_WRAPPER_LIST = "preference-wrapper-list";
 
     public static final String BUNDLE_FORECAST = "bundle-forecast";
 
     public static final int RETURN_OK = 200;
     public static final int RETURN_UNAUTHORIZED = 401;
+    public static final int RETURN_NOT_FOUND = 404;
+    public static final int RETURN_ERROR = 500;
 
 }

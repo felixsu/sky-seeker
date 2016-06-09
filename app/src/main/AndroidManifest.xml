@@ -37,6 +37,7 @@
             android:theme="@style/AppTheme.NoActionBar" />
 
         <service android:name=".service.AuthenticationCheckerService" />
+        <service android:name=".service.GeoCoderService"/>
     </application>
 
 </manifest>

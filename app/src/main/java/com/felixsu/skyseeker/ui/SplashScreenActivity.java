@@ -118,7 +118,7 @@ public class SplashScreenActivity extends Activity implements Receiver {
     private void decorateView() {
         Log.d(TAG, "decorate view");
         Drawable sunnyLogo = getDrawable(R.drawable.ic_sunny);
-        ViewUtil.tintDrawable(sunnyLogo, getResources().getColor(R.color.colorAccent));
+        ViewUtil.tintDrawable(sunnyLogo, getResources().getColor(R.color.colorWhite));
         mSunnyImage.setImageDrawable(sunnyLogo);
     }
 }

@@ -17,7 +17,7 @@ public class AuthenticationCheckerService extends IntentService {
     public static final String TAG = AuthenticationCheckerService.class.getName();
 
     public AuthenticationCheckerService() {
-        super(AuthenticationCheckerService.class.getName());
+        super(TAG);
     }
 
     @Override

@@ -113,4 +113,5 @@ public class Forecast implements Serializable {
     public void setFlags(Flags flags) {
         this.flags = flags;
     }
+
 }

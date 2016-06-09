@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
@@ -24,13 +25,19 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.felixsu.skyseeker.R;
 import com.felixsu.skyseeker.SkySeekerApp;
 import com.felixsu.skyseeker.constant.Constants;
+import com.felixsu.skyseeker.constant.LogConstants;
 import com.felixsu.skyseeker.listener.ActivityCallbackListener;
+import com.felixsu.skyseeker.model.ForecastWrapper;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.model.request.ForecastRequest;
+import com.felixsu.skyseeker.receiver.GeoCoderReceiver;
+import com.felixsu.skyseeker.receiver.Receiver;
 import com.felixsu.skyseeker.service.ForecastService;
+import com.felixsu.skyseeker.service.GeoCoderService;
 import com.felixsu.skyseeker.ui.fragment.ForecastFragment;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -42,6 +49,9 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -54,29 +64,34 @@ public class MainActivity extends AppCompatActivity
         ActivityCallbackListener,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        LocationListener {
+        LocationListener,
+        Receiver {
 
     public static final String TAG = MainActivity.class.getName();
     private static final int PLAY_SERVICE_RESOLUTION_REQUEST = 1000;
-    private static final int PERMISSION_LOCATION_COARSE_REQUEST = 1002;
-    private static final int PERMISSION_LOCATION_FINE_REQUEST = 1003;
+    private static final int PERMISSION_LOCATION_COARSE_REQUEST = 2001;
+    private static final int PERMISSION_LOCATION_FINE_REQUEST = 2002;
 
-    private static final int UPDATE_INTERVAL = 10000;
+    private static final int UPDATE_INTERVAL = 30000;
     private static final int FASTEST_INTERVAL = 5000;
     private static final int DISPLACEMENT = 10;
+
     @Inject
     protected ForecastService mForecastService;
     @Inject protected SharedPreferences mSharedPreferences;
     @Inject protected ObjectMapper mObjectMapper;
-    protected Forecast mForecast;
+
+    protected List<ForecastWrapper> mWrapperList = new ArrayList<>();
+
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
+
     private FragmentManager mFragmentManager;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private Location mLastLocation;
-    private boolean mRequestLocationUpdate = true;
     private boolean mIsRequestingPermission = false;
+    private GeoCoderReceiver mReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +114,7 @@ public class MainActivity extends AppCompatActivity
         if (mGoogleApiClient != null) {
             mGoogleApiClient.connect();
         }
+        attachReceiver();
     }
 
     @Override
@@ -106,7 +122,7 @@ public class MainActivity extends AppCompatActivity
         super.onResume();
 
         isGooglePlayServiceAvailable();
-        if (mGoogleApiClient.isConnected() && mRequestLocationUpdate) {
+        if (mGoogleApiClient.isConnected()) {
             startLocationUpdates();
         }
     }
@@ -124,8 +140,8 @@ public class MainActivity extends AppCompatActivity
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
         }
-
-        storeForecastData();
+        deAttachReceiver();
+        storeData();
     }
 
     @Override
@@ -169,8 +185,16 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onRequest(ForecastRequest request, int id) {
-        mForecastService.getForecast(request, new ForecastRequestListener(id));
+    public void onRequestForecast(ForecastRequest request, String uuid) {
+        ForecastWrapper wrapper = getWrapperWithId(uuid);
+        wrapper.setLatitude(request.getLatitude());
+        wrapper.setLongitude(request.getLongitude());
+        mForecastService.getForecast(request, new ForecastRequestListener(uuid));
+    }
+
+    @Override
+    public Location getLocation() {
+        return mLastLocation;
     }
 
     @Override
@@ -182,10 +206,7 @@ public class MainActivity extends AppCompatActivity
     public void onConnected(@Nullable Bundle bundle) {
         Log.i(TAG, "google api connected");
         displayLocation();
-
-        if (mRequestLocationUpdate) {
-            startLocationUpdates();
-        }
+        startLocationUpdates();
     }
 
     @Override
@@ -224,6 +245,60 @@ public class MainActivity extends AppCompatActivity
                 break;
         }
 
+    }
+
+    @Override
+    public void onReceiveResult(int resultCode, Bundle resultData) {
+        Log.d(TAG, "receiving back from geocoderService");
+        String uuid = resultData.getString(GeoCoderService.RESULT_UUID);
+        String primaryAddress;
+        String secondaryAddress;
+
+        switch (resultCode) {
+            case Constants.RETURN_OK:
+                ArrayList<String> listOfAddress = resultData.getStringArrayList(GeoCoderService.RESULT_ADDRESSES);
+                int size = listOfAddress.size();
+                if (size > 0) {
+                    primaryAddress = listOfAddress.get(0);
+                    if (size > 1) {
+                        secondaryAddress = listOfAddress.get(1);
+                    } else {
+                        secondaryAddress = "not found";
+                    }
+                } else {
+                    primaryAddress = "not found";
+                    secondaryAddress = "not found";
+                }
+                break;
+            case Constants.RETURN_NOT_FOUND:
+                primaryAddress = "not found";
+                secondaryAddress = "not found";
+                break;
+            case Constants.RETURN_ERROR:
+            default:
+                Log.e(TAG, LogConstants.UNEXPECTED_ERROR);
+                primaryAddress = "error";
+                secondaryAddress = "error";
+                break;
+        }
+
+        Bundle bundle = new Bundle();
+        ForecastWrapper wrapper = getWrapperWithId(uuid);
+
+        wrapper.setPrimaryLocation(primaryAddress);
+        wrapper.setSecondaryLocation(secondaryAddress);
+
+        bundle.putSerializable(Constants.BUNDLE_FORECAST, wrapper);
+        ((ForecastFragment) mFragmentManager.findFragmentByTag(uuid)).onForecastUpdated(bundle);
+    }
+
+    private void attachReceiver() {
+        mReceiver = new GeoCoderReceiver(new Handler());
+        mReceiver.setReceiver(this);
+    }
+
+    private void deAttachReceiver() {
+        mReceiver = null;
     }
 
     private boolean isGooglePlayServiceAvailable() {
@@ -304,16 +379,28 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void initFragment(){
+        ForecastWrapper primaryWrapper = null;
+        for (ForecastWrapper wrapper : mWrapperList) {
+            if (wrapper.isPrimary()) {
+                primaryWrapper = wrapper;
+                break;
+            }
+        }
 
+        if (primaryWrapper == null) {
+            Toast.makeText(this, LogConstants.UNEXPECTED_ERROR, Toast.LENGTH_SHORT).show();
+            Log.e(TAG, LogConstants.UNEXPECTED_ERROR);
+            throw new RuntimeException(LogConstants.UNEXPECTED_ERROR);
+        }
         mFragmentManager = getSupportFragmentManager();
-        mFragmentManager.beginTransaction().add(R.id.fragmentContainer, ForecastFragment.newInstance(mForecast), ForecastFragment.TAG).commit();
+        mFragmentManager.beginTransaction().add(R.id.fragmentContainer, ForecastFragment.newInstance(primaryWrapper), primaryWrapper.getUuid()).commit();
 
     }
 
     private void initData(){
         initGoogleApiClient();
         initLocationRequest();
-        loadForecastData();
+        loadWrapperList();
     }
 
     private void initGoogleApiClient() {
@@ -332,38 +419,46 @@ public class MainActivity extends AppCompatActivity
         mLocationRequest.setSmallestDisplacement(DISPLACEMENT);
     }
 
-    private void loadForecastData() {
+    private void loadWrapperList() {
         try {
-            if (mSharedPreferences.contains(Constants.PREFERENCE_FORECAST)) {
-                String storedForecast = mSharedPreferences.getString(Constants.PREFERENCE_FORECAST, null);
-                if (storedForecast != null) {
-                    mForecast = mObjectMapper.readValue(storedForecast, Forecast.class);
-                    Log.d(TAG, "forecast loaded successfully");
-                } else {
-                    mForecast = null;
+            if (mSharedPreferences.contains(Constants.PREFERENCE_WRAPPER_LIST)) {
+                String storedWrapper = mSharedPreferences.getString(Constants.PREFERENCE_WRAPPER_LIST, null);
+                if (storedWrapper != null) {
+                    mWrapperList = mObjectMapper.readValue(storedWrapper, TypeFactory.defaultInstance().constructCollectionType(List.class, ForecastWrapper.class));
+                    Log.d(TAG, "forecast wrapper loaded succesfully");
+
+                    if (mWrapperList.isEmpty()) {
+                        UUID uuid = UUID.fromString(TAG);
+                        ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), null, null, null, 0, 0, true);
+                        mWrapperList.add(wrapper);
+                    }
                 }
             } else {
-                mForecast = null;
+                UUID uuid = UUID.randomUUID();
+                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), null, null, null, 0, 0, true);
+                mWrapperList.add(wrapper);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
+            Log.w(TAG, "failed deserialize wrapper list");
             Log.e(TAG, e.getMessage(), e);
+        } catch (Exception e) {
+            Log.e(TAG, "unexpected exception", e);
         }
     }
 
-    private void storeForecastData() {
-        String forecastJson = null;
+    private void storeData() {
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
         try {
-            if (mForecast != null) {
-                forecastJson = mObjectMapper.writeValueAsString(mForecast);
-            } else {
-                Log.i(TAG, "forecast data null");
+            if (mWrapperList != null) {
+                String wrapperJson = mObjectMapper.writeValueAsString(mWrapperList);
+                editor.putString(Constants.PREFERENCE_WRAPPER_LIST, wrapperJson).apply();
             }
         } catch (Exception e){
             Log.e(TAG, e.getMessage(), e);
+            Toast.makeText(this, "Unexpected error, contact dev", Toast.LENGTH_SHORT).show();
         }
 
-        SharedPreferences.Editor editor = mSharedPreferences.edit();
-        editor.putString(Constants.PREFERENCE_FORECAST, forecastJson).apply();
+
         Log.d(TAG, "forecast stored successfully");
     }
 
@@ -391,12 +486,40 @@ public class MainActivity extends AppCompatActivity
         Log.i(TAG, "all permission granted");
     }
 
+    private ForecastWrapper getWrapperWithId(String uuid) {
+        ForecastWrapper result = null;
+        boolean found = false;
+
+        for (ForecastWrapper wrapper : mWrapperList) {
+            if (wrapper.getUuid().equals(uuid)) {
+                result = wrapper;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            Log.e(TAG, LogConstants.UNEXPECTED_ERROR);
+            throw new RuntimeException(LogConstants.UNEXPECTED_ERROR);
+        }
+        return result;
+    }
+
+    private void startGeoCoderService(String uuid) {
+        Intent intent = new Intent(this, GeoCoderService.class);
+        intent.putExtra(GeoCoderService.TAG, mReceiver);
+        intent.putExtra(GeoCoderService.EXTRA_UUID, uuid);
+        intent.putExtra(GeoCoderService.EXTRA_LATITUDE, getWrapperWithId(uuid).getLatitude());
+        intent.putExtra(GeoCoderService.EXTRA_LONGITUDE, getWrapperWithId(uuid).getLongitude());
+        startService(intent);
+
+    }
+
     private class ForecastRequestListener implements Callback {
 
-        private int mId;
+        private String mUuid;
 
-        public ForecastRequestListener(int id) {
-            mId = id;
+        public ForecastRequestListener(String uuid) {
+            mUuid = uuid;
         }
 
         @Override
@@ -407,9 +530,11 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onResponse(Call call, Response response) throws IOException {
             if (response.code() == HttpURLConnection.HTTP_OK) {
-                String body = response.body().string();
-                mForecast = mObjectMapper.readValue(body, Forecast.class);
-                ((ForecastFragment) mFragmentManager.findFragmentById(mId)).onForecastUpdated(mForecast);
+
+                Forecast forecast = mObjectMapper.readValue(response.body().string(), Forecast.class);
+                ForecastWrapper wrapper = getWrapperWithId(mUuid);
+                wrapper.setForecast(forecast);
+                startGeoCoderService(mUuid);
             } else {
                 Log.e(TAG, "got response status" + response.code() + "-" + response.body().string());
             }

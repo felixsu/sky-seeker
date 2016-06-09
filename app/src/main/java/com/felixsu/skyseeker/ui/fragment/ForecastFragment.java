@@ -1,17 +1,22 @@
 package com.felixsu.skyseeker.ui.fragment;
 
 import android.content.Context;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.felixsu.skyseeker.R;
 import com.felixsu.skyseeker.constant.Constants;
+import com.felixsu.skyseeker.constant.LogConstants;
 import com.felixsu.skyseeker.listener.ActivityCallbackListener;
+import com.felixsu.skyseeker.model.ForecastWrapper;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.model.request.ForecastRequest;
 
@@ -21,7 +26,13 @@ public class ForecastFragment extends Fragment {
 
     TextView mTemperatureLabel;
     TextView mSummaryLabel;
+    TextView mLatitudeLabel;
+    TextView mLongitudeLabel;
+    TextView mPrimaryAddressLabel;
+    TextView mSecondaryAddressLabel;
+
     Button mGetForecastButton;
+    private ForecastWrapper mForecastWrapper;
     private Forecast mForecast;
     private ActivityCallbackListener mListener;
 
@@ -35,13 +46,12 @@ public class ForecastFragment extends Fragment {
     public ForecastFragment() {
     }
 
-    // TODO: Rename and change types and number of parameters
-    public static ForecastFragment newInstance(Forecast forecast) {
+    public static ForecastFragment newInstance(ForecastWrapper forecastWrapper) {
         ForecastFragment fragment = new ForecastFragment();
         Bundle args = new Bundle();
 
-        if (forecast != null){
-            args.putSerializable(Constants.BUNDLE_FORECAST, forecast);
+        if (forecastWrapper != null) {
+            args.putSerializable(Constants.BUNDLE_FORECAST, forecastWrapper);
         }
 
         fragment.setArguments(args);
@@ -94,25 +104,55 @@ public class ForecastFragment extends Fragment {
 
     private void initForecastData(Bundle bundle){
         if (bundle.containsKey(Constants.BUNDLE_FORECAST)){
-            mForecast = (Forecast) bundle.getSerializable(Constants.BUNDLE_FORECAST);
+            mForecastWrapper = (ForecastWrapper) bundle.getSerializable(Constants.BUNDLE_FORECAST);
+            if (mForecastWrapper == null) {
+                Toast.makeText(getActivity(), "something goes wrong, contact our support", Toast.LENGTH_SHORT).show();
+                throw new RuntimeException("Forecast wrapper null");
+            }
+
+            mForecast = mForecastWrapper.getForecast();
+            if (mForecast == null) {
+                updateWeather();
+            }
+
         }
     }
 
     private void updateWeather(){
         if (mListener != null) {
-            mListener.onRequest(new ForecastRequest(-6.193, 106.87, ForecastRequest.SI_UNIT), getId());
+            Location location = mListener.getLocation();
+            if (location == null) {
+                Toast.makeText(getActivity(), "Location not available", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            double longitude = location.getLongitude();
+            double latitude = location.getLatitude();
+            Log.i(TAG, "requesting forecast for " + latitude + " " + longitude);
+            mListener.onRequestForecast(new ForecastRequest(latitude, longitude, ForecastRequest.SI_UNIT), mForecastWrapper.getUuid());
         }
     }
 
     private void initView(View rootView){
         mTemperatureLabel = (TextView) rootView.findViewById(R.id.label_temperature);
         mSummaryLabel = (TextView) rootView.findViewById(R.id.label_summary);
+        mLatitudeLabel = (TextView) rootView.findViewById(R.id.label_latitude);
+        mLongitudeLabel = (TextView) rootView.findViewById(R.id.label_longitude);
+        mPrimaryAddressLabel = (TextView) rootView.findViewById(R.id.label_primaryAddress);
+        mSecondaryAddressLabel = (TextView) rootView.findViewById(R.id.label_secondaryAddress);
+
         mGetForecastButton = (Button) rootView.findViewById(R.id.button_getForecast);
 
         mGetForecastButton.setOnClickListener(getForecastButtonListener);
     }
 
     private void updateViewValue(){
+        if (mForecastWrapper != null) {
+            mLatitudeLabel.setText(String.valueOf(mForecastWrapper.getLatitude()));
+            mLongitudeLabel.setText(String.valueOf(mForecastWrapper.getLongitude()));
+            mPrimaryAddressLabel.setText(mForecastWrapper.getPrimaryLocation());
+            mSecondaryAddressLabel.setText(mForecastWrapper.getSecondaryLocation());
+        }
+
         if (mForecast != null){
             mTemperatureLabel.setText(mForecast.getCurrently().getTemperature().toString());
             mSummaryLabel.setText(mForecast.getCurrently().getSummary());
@@ -122,13 +162,20 @@ public class ForecastFragment extends Fragment {
         }
     }
 
-    public void onForecastUpdated(Forecast forecast) {
-        mForecast = forecast;
+    public void onForecastUpdated(Bundle bundle) {
+        mForecastWrapper = (ForecastWrapper) bundle.getSerializable(Constants.BUNDLE_FORECAST);
+        if (mForecastWrapper == null) {
+            Log.e(TAG, LogConstants.UNEXPECTED_ERROR);
+            throw new RuntimeException(LogConstants.UNEXPECTED_ERROR);
+        }
+        mForecast = mForecastWrapper.getForecast();
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 updateViewValue();
             }
         });
+
+
     }
 }

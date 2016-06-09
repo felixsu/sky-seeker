@@ -13,4 +13,6 @@ public class LogConstants {
     public static final String ON_RESUME_LEAVE = "leaving on resume";
     public static final String ON_PAUSE_LEAVE = "leaving on pause";
     public static final String ON_STOP_LEAVE = "leaving on stop";
+
+    public static final String UNEXPECTED_ERROR = "something goes wrong, contact our support";
 }
