@@ -50,8 +50,6 @@ public class GeoCoderService extends IntentService {
         try {
             addresses = geocoder.getFromLocation(latitude, longitude, 10);
 
-
-
             if (addresses == null || addresses.isEmpty()){
                 receiver.send(Constants.RETURN_NOT_FOUND, result);
             } else {
@@ -67,10 +65,10 @@ public class GeoCoderService extends IntentService {
 
         } catch (IOException e) {
             Log.e(TAG, "service not available", e);
-            throw new RuntimeException("service not available");
+            receiver.send(Constants.RETURN_ERROR, result);
         } catch (IllegalArgumentException e){
             Log.e(TAG, "bad input format", e);
-            throw new RuntimeException("bad input format");
+            receiver.send(Constants.RETURN_ERROR, result);
         } catch (Exception e){
             receiver.send(Constants.RETURN_ERROR, result);
         }

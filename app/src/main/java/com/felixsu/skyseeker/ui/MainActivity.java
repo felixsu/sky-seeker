@@ -13,6 +13,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -22,16 +23,17 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.felixsu.skyseeker.R;
 import com.felixsu.skyseeker.SkySeekerApp;
 import com.felixsu.skyseeker.constant.Constants;
 import com.felixsu.skyseeker.constant.LogConstants;
 import com.felixsu.skyseeker.listener.ActivityCallbackListener;
 import com.felixsu.skyseeker.model.ForecastWrapper;
+import com.felixsu.skyseeker.model.GlobalData;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.model.request.ForecastRequest;
 import com.felixsu.skyseeker.receiver.GeoCoderReceiver;
@@ -82,9 +84,11 @@ public class MainActivity extends AppCompatActivity
     @Inject protected ObjectMapper mObjectMapper;
 
     protected List<ForecastWrapper> mWrapperList = new ArrayList<>();
+    protected GlobalData mGlobalData;
 
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
+    private Menu mNavigationMenu;
 
     private FragmentManager mFragmentManager;
     private GoogleApiClient mGoogleApiClient;
@@ -101,8 +105,10 @@ public class MainActivity extends AppCompatActivity
 
         if (isGooglePlayServiceAvailable()) {
             Log.d(TAG, "google play service is available");
+            //initData will load all available forecast stored before
             initData();
             initFragment();
+            //forecast is filled, available to be read.
             initDrawer();
         }
 
@@ -175,11 +181,21 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_signout) {
-            Log.d(TAG, "Sign out pressed");
-            FirebaseAuth.getInstance().signOut();
-            startLoginActivity();
+        ForecastWrapper wrapper = getWrapperWithViewId(id);
+        if (wrapper != null) {
+            showForecast(wrapper);
+        } else {
+            if (id == R.id.nav_signout) {
+                Log.d(TAG, "Sign out pressed");
+                FirebaseAuth.getInstance().signOut();
+                startLoginActivity();
+            }
+
+            if (id == R.id.nav_item_add_location) {
+                addNewLocation();
+            }
         }
+
         mDrawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -356,6 +372,17 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
 
         mNavigationView.setNavigationItemSelectedListener(this);
+
+        mNavigationMenu = mNavigationView.getMenu();
+
+        MenuItem locationHolder = mNavigationMenu.findItem(R.id.nav_item_location_holder);
+        for (ForecastWrapper wrapper : mWrapperList) {
+            int id = View.generateViewId();
+            wrapper.setViewId(id);
+
+            MenuItem menuItem = locationHolder.getSubMenu().add(R.id.nav_group_location, id, 0, wrapper.getName());
+            menuItem.setIcon(R.drawable.ic_location_on_black_24dp);
+        }
     }
 
     private void displayLocation() {
@@ -393,14 +420,15 @@ public class MainActivity extends AppCompatActivity
             throw new RuntimeException(LogConstants.UNEXPECTED_ERROR);
         }
         mFragmentManager = getSupportFragmentManager();
-        mFragmentManager.beginTransaction().add(R.id.fragmentContainer, ForecastFragment.newInstance(primaryWrapper), primaryWrapper.getUuid()).commit();
+        showForecast(primaryWrapper);
+        mGlobalData.setCurrentActiveUuid(null);
 
     }
 
     private void initData(){
         initGoogleApiClient();
         initLocationRequest();
-        loadWrapperList();
+        loadAppData();
     }
 
     private void initGoogleApiClient() {
@@ -419,23 +447,30 @@ public class MainActivity extends AppCompatActivity
         mLocationRequest.setSmallestDisplacement(DISPLACEMENT);
     }
 
-    private void loadWrapperList() {
+    private void loadAppData() {
         try {
-            if (mSharedPreferences.contains(Constants.PREFERENCE_WRAPPER_LIST)) {
-                String storedWrapper = mSharedPreferences.getString(Constants.PREFERENCE_WRAPPER_LIST, null);
-                if (storedWrapper != null) {
-                    mWrapperList = mObjectMapper.readValue(storedWrapper, TypeFactory.defaultInstance().constructCollectionType(List.class, ForecastWrapper.class));
-                    Log.d(TAG, "forecast wrapper loaded succesfully");
-
+            if (mSharedPreferences.contains(Constants.PREFERENCE_GLOBAL_DATA)) {
+                String globalData = mSharedPreferences.getString(Constants.PREFERENCE_GLOBAL_DATA, null);
+                if (globalData != null) {
+                    mGlobalData = mObjectMapper.readValue(globalData, GlobalData.class);
+                    Log.d(TAG, "fglobal data loaded successfully");
+                    mWrapperList = mGlobalData.getForecastWrapperList();
                     if (mWrapperList.isEmpty()) {
                         UUID uuid = UUID.fromString(TAG);
-                        ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), null, null, null, 0, 0, true);
+                        ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), Constants.FRAGMENT_NAME_DEFAULT, null, null, null, 0, 0, true);
                         mWrapperList.add(wrapper);
                     }
                 }
             } else {
+                Log.i(TAG, "first run detected");
+                mGlobalData = new GlobalData();
+                mWrapperList = new ArrayList<>();
+
+                mGlobalData.setForecastWrapperList(mWrapperList);
+
+                //generate first forecast location
                 UUID uuid = UUID.randomUUID();
-                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), null, null, null, 0, 0, true);
+                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), Constants.FRAGMENT_NAME_DEFAULT, null, null, null, 0, 0, true);
                 mWrapperList.add(wrapper);
             }
         } catch (IOException e) {
@@ -449,17 +484,16 @@ public class MainActivity extends AppCompatActivity
     private void storeData() {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         try {
-            if (mWrapperList != null) {
-                String wrapperJson = mObjectMapper.writeValueAsString(mWrapperList);
-                editor.putString(Constants.PREFERENCE_WRAPPER_LIST, wrapperJson).apply();
+            if (mGlobalData != null) {
+                String globalDataJson = mObjectMapper.writeValueAsString(mGlobalData);
+                editor.putString(Constants.PREFERENCE_GLOBAL_DATA, globalDataJson).apply();
             }
         } catch (Exception e){
             Log.e(TAG, e.getMessage(), e);
             Toast.makeText(this, "Unexpected error, contact dev", Toast.LENGTH_SHORT).show();
         }
 
-
-        Log.d(TAG, "forecast stored successfully");
+        Log.d(TAG, "global data stored successfully");
     }
 
     private void requestPermission() {
@@ -504,6 +538,18 @@ public class MainActivity extends AppCompatActivity
         return result;
     }
 
+    private ForecastWrapper getWrapperWithViewId(int viewId) {
+        ForecastWrapper result = null;
+        Log.d(TAG, "try finding wrapper with view Id " + viewId);
+        for (ForecastWrapper wrapper : mWrapperList) {
+            if (wrapper.getViewId() == viewId) {
+                result = wrapper;
+                break;
+            }
+        }
+        return result;
+    }
+
     private void startGeoCoderService(String uuid) {
         Intent intent = new Intent(this, GeoCoderService.class);
         intent.putExtra(GeoCoderService.TAG, mReceiver);
@@ -512,6 +558,34 @@ public class MainActivity extends AppCompatActivity
         intent.putExtra(GeoCoderService.EXTRA_LONGITUDE, getWrapperWithId(uuid).getLongitude());
         startService(intent);
 
+    }
+
+    private void addNewLocation() {
+        //get location name and coordinate from user
+        UUID uuid = UUID.randomUUID();
+        ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), "Bandung", null, null, null, -6.919467, 107.607451, false);
+
+        int id = View.generateViewId();
+        wrapper.setViewId(id);
+
+        MenuItem menuItem = mNavigationMenu.findItem(R.id.nav_item_location_holder).getSubMenu().add(R.id.nav_group_location, id, 0, wrapper.getName());
+        menuItem.setIcon(R.drawable.ic_location_on_black_24dp);
+
+        mWrapperList.add(wrapper);
+        showForecast(wrapper);
+    }
+
+    private void showForecast(ForecastWrapper wrapper) {
+        String currentUuid = mGlobalData.getCurrentActiveUuid();
+        FragmentTransaction ft = mFragmentManager.beginTransaction();
+        if (currentUuid != null) {
+            Log.i(TAG, "trying to replace fragment with uuid " + currentUuid + " with " + wrapper.getUuid());
+            ft.replace(R.id.fragmentContainer, ForecastFragment.newInstance(wrapper), wrapper.getUuid());
+        } else {
+            ft.add(R.id.fragmentContainer, ForecastFragment.newInstance(wrapper), wrapper.getUuid());
+        }
+        ft.commit();
+        mGlobalData.setCurrentActiveUuid(wrapper.getUuid());
     }
 
     private class ForecastRequestListener implements Callback {

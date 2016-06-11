@@ -1,5 +1,6 @@
 package com.felixsu.skyseeker.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 
 import java.io.Serializable;
@@ -7,9 +8,12 @@ import java.io.Serializable;
 /**
  * Created by felixsoewito on 6/9/16.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ForecastWrapper implements Serializable {
 
     private String mUuid;
+    private int mViewId;
+    private String mName;
     private Forecast mForecast;
     private String mPrimaryLocation;
     private String mSecondaryLocation;
@@ -17,8 +21,9 @@ public class ForecastWrapper implements Serializable {
     private double mLongitude;
     private boolean mPrimary;
 
-    public ForecastWrapper(String uuid, Forecast forecast, String primaryLocation, String secondaryLocation, double latitude, double longitude, boolean primary) {
+    public ForecastWrapper(String uuid, String name, Forecast forecast, String primaryLocation, String secondaryLocation, double latitude, double longitude, boolean primary) {
         mUuid = uuid;
+        mName = name;
         mForecast = forecast;
         mPrimaryLocation = primaryLocation;
         mSecondaryLocation = secondaryLocation;
@@ -36,6 +41,22 @@ public class ForecastWrapper implements Serializable {
 
     public void setUuid(String uuid) {
         mUuid = uuid;
+    }
+
+    public int getViewId() {
+        return mViewId;
+    }
+
+    public void setViewId(int viewId) {
+        mViewId = viewId;
+    }
+
+    public String getName() {
+        return mName;
+    }
+
+    public void setName(String name) {
+        mName = name;
     }
 
     public Forecast getForecast() {

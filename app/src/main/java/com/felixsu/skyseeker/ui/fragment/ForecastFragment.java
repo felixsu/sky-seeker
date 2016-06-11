@@ -120,15 +120,21 @@ public class ForecastFragment extends Fragment {
 
     private void updateWeather(){
         if (mListener != null) {
-            Location location = mListener.getLocation();
-            if (location == null) {
-                Toast.makeText(getActivity(), "Location not available", Toast.LENGTH_SHORT).show();
-                return;
+            if (mForecastWrapper.isPrimary()) {
+                Location location = mListener.getLocation();
+                if (location == null) {
+                    Toast.makeText(getActivity(), "Location not available", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                double longitude = location.getLongitude();
+                double latitude = location.getLatitude();
+                Log.i(TAG, "requesting forecast for " + latitude + " " + longitude);
+                mListener.onRequestForecast(new ForecastRequest(latitude, longitude, ForecastRequest.SI_UNIT), mForecastWrapper.getUuid());
+            } else {
+                double longitude = mForecastWrapper.getLongitude();
+                double latitude = mForecastWrapper.getLatitude();
+                mListener.onRequestForecast(new ForecastRequest(latitude, longitude, ForecastRequest.SI_UNIT), mForecastWrapper.getUuid());
             }
-            double longitude = location.getLongitude();
-            double latitude = location.getLatitude();
-            Log.i(TAG, "requesting forecast for " + latitude + " " + longitude);
-            mListener.onRequestForecast(new ForecastRequest(latitude, longitude, ForecastRequest.SI_UNIT), mForecastWrapper.getUuid());
         }
     }
 
@@ -146,6 +152,7 @@ public class ForecastFragment extends Fragment {
     }
 
     private void updateViewValue(){
+        Log.i(TAG, "i am " + getTag());
         if (mForecastWrapper != null) {
             mLatitudeLabel.setText(String.valueOf(mForecastWrapper.getLatitude()));
             mLongitudeLabel.setText(String.valueOf(mForecastWrapper.getLongitude()));
