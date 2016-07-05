@@ -22,9 +22,14 @@ public class GeoCoderService extends IntentService {
 
     public static final String TAG = GeoCoderService.class.getName();
 
+    public static final int REQUEST_WITH_LONG_LAT = 2000;
+    public static final int REQUEST_WITH_NAME = 2001;
+
     public static final String EXTRA_UUID = "geo-coder-service-uuid";
+    public static final String EXTRA_REQUEST_CODE = "geo-coder-request-code";
     public static final String EXTRA_LATITUDE = "geo-coder-service-latitude";
     public static final String EXTRA_LONGITUDE = "geo-coder-service-longitude";
+    public static final String EXTRA_LOCATION_NAME = "geo-coder-service-name";
 
     public static final String RESULT_UUID = "geo-coder-service-result-uuid";
     public static final String RESULT_ADDRESSES = "geo-coder-service-result-addresses";
@@ -37,18 +42,27 @@ public class GeoCoderService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         Log.d(TAG, "GeoCoderService start");
 
-        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         final ResultReceiver receiver = intent.getParcelableExtra(TAG);
-        final double latitude = intent.getDoubleExtra(EXTRA_LATITUDE, 0.0);
-        final double longitude = intent.getDoubleExtra(EXTRA_LONGITUDE, 0.0);
+        final int requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, 0);
         final String uuid = intent.getStringExtra(EXTRA_UUID);
-        List<Address> addresses;
-
         final Bundle result = new Bundle();
         result.putString(RESULT_UUID, uuid);
 
         try {
-            addresses = geocoder.getFromLocation(latitude, longitude, 10);
+
+            List<Address> addresses;
+            Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+
+            switch (requestCode) {
+                case REQUEST_WITH_LONG_LAT:
+                    addresses = startLongLatService(intent, geocoder);
+                    break;
+                case REQUEST_WITH_NAME:
+                    addresses = startLocationNameService(intent, geocoder);
+                    break;
+                default:
+                    throw new RuntimeException("Request not supported: " + requestCode);
+            }
 
             if (addresses == null || addresses.isEmpty()){
                 receiver.send(Constants.RETURN_NOT_FOUND, result);
@@ -62,7 +76,6 @@ public class GeoCoderService extends IntentService {
                 result.putStringArrayList(RESULT_ADDRESSES, addressCollection);
                 receiver.send(Constants.RETURN_OK, result);
             }
-
         } catch (IOException e) {
             Log.e(TAG, "service not available", e);
             receiver.send(Constants.RETURN_ERROR, result);
@@ -70,10 +83,26 @@ public class GeoCoderService extends IntentService {
             Log.e(TAG, "bad input format", e);
             receiver.send(Constants.RETURN_ERROR, result);
         } catch (Exception e){
+            Log.e(TAG, "unexpected exception", e);
             receiver.send(Constants.RETURN_ERROR, result);
         }
 
 
+    }
+
+    private List<Address> startLongLatService(Intent intent, Geocoder geocoder) throws Exception {
+        final double latitude = intent.getDoubleExtra(EXTRA_LATITUDE, 0.0);
+        final double longitude = intent.getDoubleExtra(EXTRA_LONGITUDE, 0.0);
+
+        return geocoder.getFromLocation(latitude, longitude, 5);
+
+
+    }
+
+    private List<Address> startLocationNameService(Intent intent, Geocoder geocoder) throws Exception {
+        final String locationName = intent.getStringExtra(EXTRA_LOCATION_NAME);
+
+        return geocoder.getFromLocationName(locationName, 5);
     }
 
 }

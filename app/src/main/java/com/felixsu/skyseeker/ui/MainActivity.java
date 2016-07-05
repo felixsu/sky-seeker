@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity
     private static final int PLAY_SERVICE_RESOLUTION_REQUEST = 1000;
     private static final int PERMISSION_LOCATION_COARSE_REQUEST = 2001;
     private static final int PERMISSION_LOCATION_FINE_REQUEST = 2002;
+    private static final int LOCATION_REQUEST = 1001;
 
     private static final int UPDATE_INTERVAL = 30000;
     private static final int FASTEST_INTERVAL = 5000;
@@ -173,6 +174,33 @@ public class MainActivity extends AppCompatActivity
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == LOCATION_REQUEST) {
+            if (resultCode == RESULT_OK) {
+
+                Double longitude = data.getDoubleExtra(SelectPlaceActivity.RESULT_LONGITUDE, 0.0);
+                Double latitude = data.getDoubleExtra(SelectPlaceActivity.RESULT_LATITUDE, 0.0);
+                Log.i(TAG, "long: " + longitude + " lat: " + latitude);
+                Toast.makeText(this, "long: " + longitude + " lat: " + latitude, Toast.LENGTH_SHORT).show();
+//                UUID uuid = UUID.randomUUID();
+//                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), "Bandung", null, null, null, -6.919467, 107.607451, false);
+//
+//                int id = View.generateViewId();
+//                wrapper.setViewId(id);
+//
+//                MenuItem menuItem = mNavigationMenu.findItem(R.id.nav_item_location_holder).getSubMenu().add(R.id.nav_group_location, id, 0, wrapper.getName());
+//                menuItem.setIcon(R.drawable.ic_location_on_black_24dp);
+//
+//                mWrapperList.add(wrapper);
+//                showForecast(wrapper);
+            } else {
+                Log.i(TAG, "location result cancelled/failed");
+            }
+        }
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -554,6 +582,7 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(this, GeoCoderService.class);
         intent.putExtra(GeoCoderService.TAG, mReceiver);
         intent.putExtra(GeoCoderService.EXTRA_UUID, uuid);
+        intent.putExtra(GeoCoderService.EXTRA_REQUEST_CODE, GeoCoderService.REQUEST_WITH_LONG_LAT);
         intent.putExtra(GeoCoderService.EXTRA_LATITUDE, getWrapperWithId(uuid).getLatitude());
         intent.putExtra(GeoCoderService.EXTRA_LONGITUDE, getWrapperWithId(uuid).getLongitude());
         startService(intent);
@@ -561,18 +590,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void addNewLocation() {
-        //get location name and coordinate from user
-        UUID uuid = UUID.randomUUID();
-        ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), "Bandung", null, null, null, -6.919467, 107.607451, false);
-
-        int id = View.generateViewId();
-        wrapper.setViewId(id);
-
-        MenuItem menuItem = mNavigationMenu.findItem(R.id.nav_item_location_holder).getSubMenu().add(R.id.nav_group_location, id, 0, wrapper.getName());
-        menuItem.setIcon(R.drawable.ic_location_on_black_24dp);
-
-        mWrapperList.add(wrapper);
-        showForecast(wrapper);
+        Intent intent = new Intent(this, SelectPlaceActivity.class);
+        startActivityForResult(intent, LOCATION_REQUEST);
     }
 
     private void showForecast(ForecastWrapper wrapper) {
