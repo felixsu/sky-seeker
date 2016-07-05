@@ -184,19 +184,21 @@ public class MainActivity extends AppCompatActivity
 
                 Double longitude = data.getDoubleExtra(SelectPlaceActivity.RESULT_LONGITUDE, 0.0);
                 Double latitude = data.getDoubleExtra(SelectPlaceActivity.RESULT_LATITUDE, 0.0);
+                String placeName = data.getStringExtra(SelectPlaceActivity.RESULT_PLACE_NAME);
                 Log.i(TAG, "long: " + longitude + " lat: " + latitude);
                 Toast.makeText(this, "long: " + longitude + " lat: " + latitude, Toast.LENGTH_SHORT).show();
-//                UUID uuid = UUID.randomUUID();
-//                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), "Bandung", null, null, null, -6.919467, 107.607451, false);
-//
-//                int id = View.generateViewId();
-//                wrapper.setViewId(id);
-//
-//                MenuItem menuItem = mNavigationMenu.findItem(R.id.nav_item_location_holder).getSubMenu().add(R.id.nav_group_location, id, 0, wrapper.getName());
-//                menuItem.setIcon(R.drawable.ic_location_on_black_24dp);
-//
-//                mWrapperList.add(wrapper);
-//                showForecast(wrapper);
+
+                UUID uuid = UUID.randomUUID();
+                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), placeName, null, null, null, latitude, longitude, false);
+
+                int id = View.generateViewId();
+                wrapper.setViewId(id);
+
+                MenuItem menuItem = mNavigationMenu.findItem(R.id.nav_item_location_holder).getSubMenu().add(R.id.nav_group_location, id, 0, wrapper.getName());
+                menuItem.setIcon(R.drawable.ic_location_on_black_24dp);
+
+                mWrapperList.add(wrapper);
+                showForecast(wrapper);
             } else {
                 Log.i(TAG, "location result cancelled/failed");
             }

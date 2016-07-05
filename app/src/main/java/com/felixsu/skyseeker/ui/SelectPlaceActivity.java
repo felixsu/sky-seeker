@@ -6,6 +6,10 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import com.felixsu.skyseeker.R;
 import com.google.android.gms.common.api.Status;
@@ -23,6 +27,12 @@ public class SelectPlaceActivity extends AppCompatActivity {
     public static final String RESULT_PLACE_NAME = "result-select-place-activity-name";
 
     private PlaceAutocompleteFragment mPlaceFragment;
+
+    private TextView mPlaceNameLabel;
+    private EditText mPlaceNameField;
+    private Button mSubmitButton;
+
+    private Place mSelectedPlace;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,38 +70,58 @@ public class SelectPlaceActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
+        initAutoCompletePlaceFragment();
+
+        mPlaceNameLabel = (TextView) findViewById(R.id.label_place_name);
+        mPlaceNameField = (EditText) findViewById(R.id.field_place_name);
+        mSubmitButton = (Button) findViewById(R.id.button_submit_place);
+
+        mPlaceNameLabel.setText("-");
+        mSubmitButton.setEnabled(false);
+        mSubmitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                submitResult();
+            }
+        });
+    }
+
+    private void initAutoCompletePlaceFragment() {
         mPlaceFragment = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
         AutocompleteFilter typeFilter = new AutocompleteFilter.Builder()
-                .setTypeFilter(AutocompleteFilter.TYPE_FILTER_ADDRESS)
+                .setTypeFilter(AutocompleteFilter.TYPE_FILTER_CITIES)
                 .build();
         mPlaceFragment.setFilter(typeFilter);
 
         mPlaceFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(Place place) {
-                // TODO: Get info about the selected place.
+                mSelectedPlace = place;
+                mPlaceNameLabel.setText(place.getName());
+                mSubmitButton.setEnabled(true);
                 Log.i(TAG, "Place: " + place.getName());//get place details here
-                Intent intent = getIntent();
-                if (intent != null) {
-                    intent.putExtra(RESULT_LONGITUDE, place.getLatLng().longitude);
-                    intent.putExtra(RESULT_LATITUDE, place.getLatLng().latitude);
-                    intent.putExtra(RESULT_PLACE_NAME, place.getName());
-
-                    setResult(RESULT_OK, intent);
-                } else {
-                    Log.e(TAG, "unexpected error. intent null");
-                    setResult(RESULT_CANCELED);
-                }
-                finish();
-
             }
 
             @Override
             public void onError(Status status) {
-                // TODO: Handle the error.
                 Log.i(TAG, "An error occurred: " + status);
             }
         });
+    }
+
+    private void submitResult() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            intent.putExtra(RESULT_LONGITUDE, mSelectedPlace.getLatLng().longitude);
+            intent.putExtra(RESULT_LATITUDE, mSelectedPlace.getLatLng().latitude);
+            intent.putExtra(RESULT_PLACE_NAME, mSelectedPlace.getName());
+
+            setResult(RESULT_OK, intent);
+        } else {
+            Log.e(TAG, "unexpected error. intent null");
+            setResult(RESULT_CANCELED);
+        }
+        finish();
     }
 
 }
