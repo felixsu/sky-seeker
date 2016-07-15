@@ -33,6 +33,9 @@ public class GeoCoderService extends IntentService {
 
     public static final String RESULT_UUID = "geo-coder-service-result-uuid";
     public static final String RESULT_ADDRESSES = "geo-coder-service-result-addresses";
+    public static final String RESULT_SUB_ADMINISTRATIVE_NAME = "geo-coder-service-administration-name";
+    public static final String RESULT_ADMINISTRATIVE_NAME = "geo-coder-service-administration-name";
+    public static final String RESULT_COUNTRY_CODE = "geo-coder-service-result-country-code";
 
     public GeoCoderService() {
         super(GeoCoderService.TAG);
@@ -74,6 +77,9 @@ public class GeoCoderService extends IntentService {
                     addressCollection.add(address.getAddressLine(i));
                 }
                 result.putStringArrayList(RESULT_ADDRESSES, addressCollection);
+                result.putString(RESULT_ADMINISTRATIVE_NAME, address.getAdminArea());
+                result.putString(RESULT_SUB_ADMINISTRATIVE_NAME, address.getSubAdminArea());
+                result.putString(RESULT_COUNTRY_CODE, address.getCountryCode());
                 receiver.send(Constants.RETURN_OK, result);
             }
         } catch (IOException e) {

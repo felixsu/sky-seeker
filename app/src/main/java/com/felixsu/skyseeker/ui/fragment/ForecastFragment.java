@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,19 +20,24 @@ import com.felixsu.skyseeker.listener.ActivityCallbackListener;
 import com.felixsu.skyseeker.model.ForecastWrapper;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.model.request.ForecastRequest;
+import com.felixsu.skyseeker.util.ForecastUtil;
+import com.felixsu.skyseeker.util.Util;
 
 public class ForecastFragment extends Fragment {
 
     public static final String TAG = ForecastFragment.class.getName();
-
-    TextView mTemperatureLabel;
-    TextView mSummaryLabel;
-    TextView mLatitudeLabel;
-    TextView mLongitudeLabel;
     TextView mPrimaryAddressLabel;
     TextView mSecondaryAddressLabel;
-
     Button mGetForecastButton;
+    private ImageView mWeatherIcon;
+    private TextView mLocationNameLabel;
+    private TextView mTemperatureLabel;
+    private TextView mApparentTemperatureLabel;
+    private TextView mWeatherDetailLabel;
+    private TextView mWindDirectionLabel;
+    private TextView mWindSpeedLabel;
+    private TextView mHumidityLabel;
+    private TextView mPrecipChanceLabel;
     private ForecastWrapper mForecastWrapper;
     private Forecast mForecast;
     private ActivityCallbackListener mListener;
@@ -139,10 +145,16 @@ public class ForecastFragment extends Fragment {
     }
 
     private void initView(View rootView){
+        mWeatherIcon = (ImageView) rootView.findViewById(R.id.ic_weather);
+        mLocationNameLabel = (TextView) rootView.findViewById(R.id.label_locationName);
         mTemperatureLabel = (TextView) rootView.findViewById(R.id.label_temperature);
-        mSummaryLabel = (TextView) rootView.findViewById(R.id.label_summary);
-        mLatitudeLabel = (TextView) rootView.findViewById(R.id.label_latitude);
-        mLongitudeLabel = (TextView) rootView.findViewById(R.id.label_longitude);
+        mApparentTemperatureLabel = (TextView) rootView.findViewById(R.id.label_apparentTemperature);
+        mWeatherDetailLabel = (TextView) rootView.findViewById(R.id.label_weatherDetail);
+        mWindDirectionLabel = (TextView) rootView.findViewById(R.id.label_windDirection);
+        mWindSpeedLabel = (TextView) rootView.findViewById(R.id.label_windSpeed);
+        mHumidityLabel = (TextView) rootView.findViewById(R.id.label_humidity);
+        mPrecipChanceLabel = (TextView) rootView.findViewById(R.id.label_precipChance);
+
         mPrimaryAddressLabel = (TextView) rootView.findViewById(R.id.label_primaryAddress);
         mSecondaryAddressLabel = (TextView) rootView.findViewById(R.id.label_secondaryAddress);
 
@@ -152,20 +164,40 @@ public class ForecastFragment extends Fragment {
     }
 
     private void updateViewValue(){
+        //todo not complete yet
         Log.i(TAG, "i am " + getTag());
+        final String temperatureCelsiusText = "%d " + "°C";
+        final String feelsLikeCelsiusText = "Feels like %d " + "°C";
+        final String windSpeedText = "%d " + "m/s";
+        final String humidityText = "%d " + "%%";
+        final String precipChanceText = "%d " + "%%";
+
         if (mForecastWrapper != null) {
-            mLatitudeLabel.setText(String.valueOf(mForecastWrapper.getLatitude()));
-            mLongitudeLabel.setText(String.valueOf(mForecastWrapper.getLongitude()));
             mPrimaryAddressLabel.setText(mForecastWrapper.getPrimaryLocation());
             mSecondaryAddressLabel.setText(mForecastWrapper.getSecondaryLocation());
+            mLocationNameLabel.setText(mForecastWrapper.getSubAdministrativeLocation() + ", " + mForecastWrapper.getCountry());
+        } else {
+            mLocationNameLabel.setText("not available");
         }
 
         if (mForecast != null){
-            mTemperatureLabel.setText(mForecast.getCurrently().getTemperature().toString());
-            mSummaryLabel.setText(mForecast.getCurrently().getSummary());
+            mWeatherIcon.setImageResource(ForecastUtil.getIcon(mForecast.getCurrently().getIcon()));
+            mTemperatureLabel.setText(String.format(temperatureCelsiusText, mForecast.getCurrently().getTemperature().intValue()));
+            mApparentTemperatureLabel.setText(String.format(feelsLikeCelsiusText, mForecast.getCurrently().getApparentTemperature().intValue()));
+            mWeatherDetailLabel.setText(mForecast.getHourly().getSummary());
+            mWindDirectionLabel.setText(ForecastUtil.directionValue(mForecast.getCurrently().getWindBearing()));
+            mWindSpeedLabel.setText(String.format(windSpeedText, mForecast.getCurrently().getWindSpeed().intValue()));
+            mHumidityLabel.setText(String.format(humidityText, Util.percentValue(mForecast.getCurrently().getHumidity())));
+            mPrecipChanceLabel.setText(String.format(precipChanceText, Util.percentValue(mForecast.getCurrently().getPrecipProbability())));
         } else {
-            mTemperatureLabel.setText("not available");
-            mSummaryLabel.setText("not available");
+            mWeatherIcon.setImageResource(R.drawable.ic_weather_sunny);
+            mTemperatureLabel.setText("-");
+            mApparentTemperatureLabel.setText("Feels like -");
+            mWeatherDetailLabel.setText("please refresh");
+            mWindDirectionLabel.setText("-");
+            mWindSpeedLabel.setText("-");
+            mHumidityLabel.setText("-");
+            mPrecipChanceLabel.setText("-");
         }
     }
 
@@ -185,4 +217,6 @@ public class ForecastFragment extends Fragment {
 
 
     }
+
+
 }

@@ -22,9 +22,9 @@ public class Currently implements Serializable {
     @JsonProperty("nearestStormBearing")
     private Integer mNearestStormBearing;
     @JsonProperty("precipIntensity")
-    private Integer mPrecipIntensity;
+    private Double mPrecipIntensity;
     @JsonProperty("precipProbability")
-    private Integer mPrecipProbability;
+    private Double mPrecipProbability;
     @JsonProperty("temperature")
     private Double mTemperature;
     @JsonProperty("apparentTemperature")
@@ -86,19 +86,19 @@ public class Currently implements Serializable {
         mNearestStormBearing = nearestStormBearing;
     }
 
-    public Integer getPrecipIntensity() {
+    public Double getPrecipIntensity() {
         return mPrecipIntensity;
     }
 
-    public void setPrecipIntensity(Integer precipIntensity) {
+    public void setPrecipIntensity(Double precipIntensity) {
         mPrecipIntensity = precipIntensity;
     }
 
-    public Integer getPrecipProbability() {
+    public Double getPrecipProbability() {
         return mPrecipProbability;
     }
 
-    public void setPrecipProbability(Integer precipProbability) {
+    public void setPrecipProbability(Double precipProbability) {
         mPrecipProbability = precipProbability;
     }
 

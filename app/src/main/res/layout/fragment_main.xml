@@ -2,39 +2,162 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="@color/colorWhite"
+              android:background="@color/colorWhiteDark"
               android:orientation="vertical"
               tools:context=".ui.fragment.ForecastFragment">
 
-    <TextView
-        android:id="@+id/label_temperature"
+    <RelativeLayout
+        android:id="@+id/container_main"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:background="@color/colorWhite"
+        android:translationZ="4dp">
 
-    <TextView
-        android:id="@+id/label_summary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <TextView
+            android:id="@+id/label_locationName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/activity_default_padding"
+            android:textSize="28sp"
+            tools:text="Jakarta"/>
 
-    <TextView
-        android:id="@+id/label_latitude"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <ImageView
+            android:id="@+id/ic_weather"
+            android:layout_width="144dp"
+            android:layout_height="144dp"
+            android:layout_below="@id/label_locationName"
+            android:padding="@dimen/activity_default_padding"
+            tools:src="@drawable/ic_weather_sunny"/>
 
-    <TextView
-        android:id="@+id/label_longitude"
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@id/ic_weather"
+            android:layout_alignTop="@id/ic_weather"
+            android:layout_toEndOf="@id/ic_weather"
+            android:orientation="vertical"
+            android:padding="@dimen/activity_default_padding">
+
+            <TextView
+                android:id="@+id/label_temperature"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="52sp"
+                tools:text="29°C"/>
+
+            <TextView
+                android:id="@+id/label_apparentTemperature"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="Feels like 31°C"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/label_weatherDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/ic_weather"
+            android:padding="@dimen/activity_default_padding"
+            tools:text="Sun will accompany your day"/>
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/container_detail"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/activity_vertical_margin_half"
+        android:layout_marginTop="@dimen/activity_vertical_margin_half"
+        android:background="@color/colorWhite"
+        android:orientation="vertical"
+        android:translationZ="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/activity_default_padding"
+            android:paddingRight="@dimen/activity_default_padding"
+            android:paddingTop="@dimen/activity_default_padding"
+            android:weightSum="10">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="Wind Direction"/>
+
+            <TextView
+                android:id="@+id/label_windDirection"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text=": NW"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="Wind Speed"/>
+
+            <TextView
+                android:id="@+id/label_windSpeed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text=": 2kmh"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="@dimen/activity_default_padding"
+            android:paddingLeft="@dimen/activity_default_padding"
+            android:paddingRight="@dimen/activity_default_padding"
+            android:weightSum="10">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="Humidity"/>
+
+            <TextView
+                android:id="@+id/label_humidity"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text=": 43%"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="Precip Chance"/>
+
+            <TextView
+                android:id="@+id/label_precipChance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text=": 78%"/>
+
+        </LinearLayout>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/label_primaryAddress"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/activity_vertical_margin_half"
+        tools:text="test"/>
 
     <TextView
         android:id="@+id/label_secondaryAddress"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        tools:text="test"/>
 
     <Button
         android:id="@+id/button_getForecast"

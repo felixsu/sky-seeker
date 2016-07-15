@@ -17,16 +17,22 @@ public class ForecastWrapper implements Serializable {
     private Forecast mForecast;
     private String mPrimaryLocation;
     private String mSecondaryLocation;
+    private String mSubAdministrativeLocation;
+    private String mAdministrativeLocation;
+    private String mCountry;
     private double mLatitude;
     private double mLongitude;
     private boolean mPrimary;
 
-    public ForecastWrapper(String uuid, String name, Forecast forecast, String primaryLocation, String secondaryLocation, double latitude, double longitude, boolean primary) {
+    public ForecastWrapper(String uuid, String name, Forecast forecast, String primaryLocation, String secondaryLocation, String subAdministrativeLocation, String administrativeLocationName, String country, double latitude, double longitude, boolean primary) {
         mUuid = uuid;
         mName = name;
         mForecast = forecast;
         mPrimaryLocation = primaryLocation;
         mSecondaryLocation = secondaryLocation;
+        mSubAdministrativeLocation = subAdministrativeLocation;
+        mAdministrativeLocation = administrativeLocationName;
+        mCountry = country;
         mLatitude = latitude;
         mLongitude = longitude;
         mPrimary = primary;
@@ -81,6 +87,30 @@ public class ForecastWrapper implements Serializable {
 
     public void setSecondaryLocation(String secondaryLocation) {
         mSecondaryLocation = secondaryLocation;
+    }
+
+    public String getSubAdministrativeLocation() {
+        return mSubAdministrativeLocation;
+    }
+
+    public void setSubAdministrativeLocation(String subAdministrativeLocation) {
+        mSubAdministrativeLocation = subAdministrativeLocation;
+    }
+
+    public String getAdministrativeLocation() {
+        return mAdministrativeLocation;
+    }
+
+    public void setAdministrativeLocation(String administrativeLocation) {
+        mAdministrativeLocation = administrativeLocation;
+    }
+
+    public String getCountry() {
+        return mCountry;
+    }
+
+    public void setCountry(String country) {
+        mCountry = country;
     }
 
     public double getLatitude() {

@@ -6,8 +6,6 @@ import android.util.Base64;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class Util {
 
     public static String base64Encode(byte[] input, int len) {
@@ -25,5 +23,9 @@ public class Util {
             ((InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE)).
                     hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         }
+    }
+
+    public static int percentValue(double value) {
+        return (int) (value * 100);
     }
 }

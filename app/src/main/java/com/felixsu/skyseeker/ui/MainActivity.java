@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity
                 Toast.makeText(this, "long: " + longitude + " lat: " + latitude, Toast.LENGTH_SHORT).show();
 
                 UUID uuid = UUID.randomUUID();
-                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), placeName, null, null, null, latitude, longitude, false);
+                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), placeName, null, null, null, null, null, null, latitude, longitude, false);
 
                 int id = View.generateViewId();
                 wrapper.setViewId(id);
@@ -299,10 +299,16 @@ public class MainActivity extends AppCompatActivity
         String uuid = resultData.getString(GeoCoderService.RESULT_UUID);
         String primaryAddress;
         String secondaryAddress;
+        String countryCode;
+        String subAdmin;
+        String admin;
 
         switch (resultCode) {
             case Constants.RETURN_OK:
                 ArrayList<String> listOfAddress = resultData.getStringArrayList(GeoCoderService.RESULT_ADDRESSES);
+                countryCode = resultData.getString(GeoCoderService.RESULT_COUNTRY_CODE);
+                subAdmin = resultData.getString(GeoCoderService.RESULT_SUB_ADMINISTRATIVE_NAME);
+                admin = resultData.getString(GeoCoderService.RESULT_ADMINISTRATIVE_NAME);
                 int size = listOfAddress.size();
                 if (size > 0) {
                     primaryAddress = listOfAddress.get(0);
@@ -319,12 +325,19 @@ public class MainActivity extends AppCompatActivity
             case Constants.RETURN_NOT_FOUND:
                 primaryAddress = "not found";
                 secondaryAddress = "not found";
+                countryCode = "not found";
+                subAdmin = "not found";
+                admin = "not found";
                 break;
             case Constants.RETURN_ERROR:
             default:
                 Log.e(TAG, LogConstants.UNEXPECTED_ERROR);
                 primaryAddress = "error";
                 secondaryAddress = "error";
+                countryCode = "error";
+                subAdmin = "error";
+                admin = "error";
+
                 break;
         }
 
@@ -333,6 +346,9 @@ public class MainActivity extends AppCompatActivity
 
         wrapper.setPrimaryLocation(primaryAddress);
         wrapper.setSecondaryLocation(secondaryAddress);
+        wrapper.setCountry(countryCode);
+        wrapper.setSubAdministrativeLocation(subAdmin);
+        wrapper.setAdministrativeLocation(admin);
 
         bundle.putSerializable(Constants.BUNDLE_FORECAST, wrapper);
         ((ForecastFragment) mFragmentManager.findFragmentByTag(uuid)).onForecastUpdated(bundle);
@@ -483,11 +499,11 @@ public class MainActivity extends AppCompatActivity
                 String globalData = mSharedPreferences.getString(Constants.PREFERENCE_GLOBAL_DATA, null);
                 if (globalData != null) {
                     mGlobalData = mObjectMapper.readValue(globalData, GlobalData.class);
-                    Log.d(TAG, "fglobal data loaded successfully");
+                    Log.d(TAG, "global data loaded successfully");
                     mWrapperList = mGlobalData.getForecastWrapperList();
                     if (mWrapperList.isEmpty()) {
                         UUID uuid = UUID.fromString(TAG);
-                        ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), Constants.FRAGMENT_NAME_DEFAULT, null, null, null, 0, 0, true);
+                        ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), Constants.FRAGMENT_NAME_DEFAULT, null, null, null, null, null, null, 0, 0, true);
                         mWrapperList.add(wrapper);
                     }
                 }
@@ -500,7 +516,7 @@ public class MainActivity extends AppCompatActivity
 
                 //generate first forecast location
                 UUID uuid = UUID.randomUUID();
-                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), Constants.FRAGMENT_NAME_DEFAULT, null, null, null, 0, 0, true);
+                ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), Constants.FRAGMENT_NAME_DEFAULT, null, null, null, null, null, null, 0, 0, true);
                 mWrapperList.add(wrapper);
             }
         } catch (IOException e) {
