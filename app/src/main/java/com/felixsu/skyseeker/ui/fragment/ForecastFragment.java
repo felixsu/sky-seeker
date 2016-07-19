@@ -26,8 +26,6 @@ import com.felixsu.skyseeker.util.Util;
 public class ForecastFragment extends Fragment {
 
     public static final String TAG = ForecastFragment.class.getName();
-    TextView mPrimaryAddressLabel;
-    TextView mSecondaryAddressLabel;
     Button mGetForecastButton;
     private ImageView mWeatherIcon;
     private TextView mLocationNameLabel;
@@ -155,9 +153,6 @@ public class ForecastFragment extends Fragment {
         mHumidityLabel = (TextView) rootView.findViewById(R.id.label_humidity);
         mPrecipChanceLabel = (TextView) rootView.findViewById(R.id.label_precipChance);
 
-        mPrimaryAddressLabel = (TextView) rootView.findViewById(R.id.label_primaryAddress);
-        mSecondaryAddressLabel = (TextView) rootView.findViewById(R.id.label_secondaryAddress);
-
         mGetForecastButton = (Button) rootView.findViewById(R.id.button_getForecast);
 
         mGetForecastButton.setOnClickListener(getForecastButtonListener);
@@ -173,8 +168,6 @@ public class ForecastFragment extends Fragment {
         final String precipChanceText = "%d " + "%%";
 
         if (mForecastWrapper != null) {
-            mPrimaryAddressLabel.setText(mForecastWrapper.getPrimaryLocation());
-            mSecondaryAddressLabel.setText(mForecastWrapper.getSecondaryLocation());
             mLocationNameLabel.setText(mForecastWrapper.getSubAdministrativeLocation() + ", " + mForecastWrapper.getCountry());
         } else {
             mLocationNameLabel.setText("not available");

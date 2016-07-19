@@ -2,7 +2,7 @@ package com.felixsu.skyseeker.constant;
 
 public class Constants {
 
-    public static final String GOOGLE_OAUTH_CLIENT_ID = "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com";
+    public static final String GOOGLE_WEB_CLIENT_ID = "665624256153-4tqpu9lpm5murrh038n7db10flsu47lo.apps.googleusercontent.com";
     public static final String FORECAST_API_KEY = "5c150722b10107dcbd3b1c60931cacc9";
     public static final String FRAGMENT_NAME_DEFAULT = "My Location";
 

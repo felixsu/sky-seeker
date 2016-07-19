@@ -77,13 +77,15 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
+            Log.d(TAG, "return from signin");
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
             if (result.isSuccess()) {
-                // Google Sign In was successful, authenticate with Firebase
+                Log.i(TAG, "Sign In Successful");
                 GoogleSignInAccount account = result.getSignInAccount();
                 firebaseAuthWithGoogle(account);
             } else {
-                Toast.makeText(this, "Google Auth Failed", Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "sign In error : STATUS " + result.getStatus());
+                Toast.makeText(this, "Google Auth Failed " + result.getStatus(), Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -105,7 +107,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         mAuth = FirebaseAuth.getInstance();
 
         mGoogleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(Constants.GOOGLE_OAUTH_CLIENT_ID)
+                .requestIdToken(Constants.GOOGLE_WEB_CLIENT_ID)
                 .requestEmail()
                 .build();
 
@@ -158,7 +160,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     }
 
     private void signIn() {
-        Log.d(TAG, "entering signIn");
+        Log.i(TAG, "entering signIn");
         Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
         startActivityForResult(signInIntent, RC_SIGN_IN);
     }

@@ -8,50 +8,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:665624256153:android:ebdfbd06aa4de572",
-        "android_client_info": {
-          "package_name": "com.felixsu.skydrop"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "665624256153-rvajr9ephkb153gp2e22n8e3j8gcs9md.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.felixsu.skydrop",
-            "certificate_hash": "451CC078FCB22F119312593F7F190708DDDD3422"
-          }
-        },
-        {
-          "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAeKOC0N05lhtwPAVKuDaaG1dnOw_k2bkw"
-        }
-      ],
-      "services": {
-        "analytics_service": {
-          "status": 1
-        },
-        "appinvite_service": {
-          "status": 2,
-          "other_platform_oauth_client": [
-            {
-              "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        },
-        "ads_service": {
-          "status": 2
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:665624256153:android:e33dcc2e975e8811",
         "android_client_info": {
           "package_name": "com.felixsu.skyseeker"
@@ -67,21 +23,13 @@
           }
         },
         {
-          "client_id": "665624256153-ej4r8fr55carrp6cjdjdh4aagi09e2gr.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.felixsu.skyseeker",
-            "certificate_hash": "B5AE32CE796373FD9968C4A4AC3111B9F7790FBC"
-          }
-        },
-        {
-          "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
+          "client_id": "665624256153-4tqpu9lpm5murrh038n7db10flsu47lo.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAeKOC0N05lhtwPAVKuDaaG1dnOw_k2bkw"
+          "current_key": "AIzaSyD9RJnezIqigh8EOnsbzuF7K3K8eNW-KmM"
         }
       ],
       "services": {
@@ -92,7 +40,7 @@
           "status": 2,
           "other_platform_oauth_client": [
             {
-              "client_id": "665624256153-j1aoj74h5dj3974520sdo56imso8vbet.apps.googleusercontent.com",
+              "client_id": "665624256153-4tqpu9lpm5murrh038n7db10flsu47lo.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
