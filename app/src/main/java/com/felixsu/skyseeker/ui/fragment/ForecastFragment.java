@@ -22,11 +22,13 @@ import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.model.request.ForecastRequest;
 import com.felixsu.skyseeker.util.ForecastUtil;
 import com.felixsu.skyseeker.util.Util;
+import com.github.aakira.expandablelayout.ExpandableRelativeLayout;
 
-public class ForecastFragment extends Fragment {
+public class ForecastFragment extends Fragment implements View.OnClickListener {
 
     public static final String TAG = ForecastFragment.class.getName();
     Button mGetForecastButton;
+    Button mToggleDetailButton;
     private ImageView mWeatherIcon;
     private TextView mLocationNameLabel;
     private TextView mTemperatureLabel;
@@ -38,14 +40,8 @@ public class ForecastFragment extends Fragment {
     private TextView mPrecipChanceLabel;
     private ForecastWrapper mForecastWrapper;
     private Forecast mForecast;
+    private ExpandableRelativeLayout mExpandableLayout;
     private ActivityCallbackListener mListener;
-
-    private View.OnClickListener getForecastButtonListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            updateWeather();
-        }
-    };
 
     public ForecastFragment() {
     }
@@ -60,6 +56,21 @@ public class ForecastFragment extends Fragment {
 
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.button_getForecast:
+                updateWeather();
+                break;
+            case R.id.button_toggleDetail:
+                toggleDetailView();
+                break;
+            default:
+                Log.w(TAG, "clicking unregistered object");
+                break;
+        }
     }
 
     @Override
@@ -154,8 +165,12 @@ public class ForecastFragment extends Fragment {
         mPrecipChanceLabel = (TextView) rootView.findViewById(R.id.label_precipChance);
 
         mGetForecastButton = (Button) rootView.findViewById(R.id.button_getForecast);
+        mToggleDetailButton = (Button) rootView.findViewById(R.id.button_toggleDetail);
 
-        mGetForecastButton.setOnClickListener(getForecastButtonListener);
+        mGetForecastButton.setOnClickListener(this);
+        mToggleDetailButton.setOnClickListener(this);
+
+        mExpandableLayout = (ExpandableRelativeLayout) rootView.findViewById(R.id.expandable_detail);
     }
 
     private void updateViewValue(){
@@ -207,8 +222,10 @@ public class ForecastFragment extends Fragment {
                 updateViewValue();
             }
         });
+    }
 
-
+    public void toggleDetailView() {
+        mExpandableLayout.toggle();
     }
 
 
