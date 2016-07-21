@@ -34,6 +34,7 @@ import com.felixsu.skyseeker.constant.LogConstants;
 import com.felixsu.skyseeker.listener.ActivityCallbackListener;
 import com.felixsu.skyseeker.model.ForecastWrapper;
 import com.felixsu.skyseeker.model.GlobalData;
+import com.felixsu.skyseeker.model.User;
 import com.felixsu.skyseeker.model.forecast.Forecast;
 import com.felixsu.skyseeker.model.request.ForecastRequest;
 import com.felixsu.skyseeker.receiver.GeoCoderReceiver;
@@ -41,17 +42,24 @@ import com.felixsu.skyseeker.receiver.Receiver;
 import com.felixsu.skyseeker.service.ForecastService;
 import com.felixsu.skyseeker.service.GeoCoderService;
 import com.felixsu.skyseeker.ui.fragment.ForecastFragment;
+import com.felixsu.skyseeker.util.Util;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,6 +94,9 @@ public class MainActivity extends AppCompatActivity
 
     protected List<ForecastWrapper> mWrapperList = new ArrayList<>();
     protected GlobalData mGlobalData;
+    protected User mUser;
+    private boolean mFromSignIn = false;
+    private Bundle mSignInBundle;
 
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
@@ -97,6 +108,10 @@ public class MainActivity extends AppCompatActivity
     private Location mLastLocation;
     private boolean mIsRequestingPermission = false;
     private GeoCoderReceiver mReceiver;
+    private FirebaseAnalytics mFirebaseAnalytics;
+    private FirebaseDatabase mFirebaseDatabase;
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseUser mFirebaseUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,7 +127,6 @@ public class MainActivity extends AppCompatActivity
             //forecast is filled, available to be read.
             initDrawer();
         }
-
     }
 
     @Override
@@ -186,7 +200,6 @@ public class MainActivity extends AppCompatActivity
                 Double latitude = data.getDoubleExtra(SelectPlaceActivity.RESULT_LATITUDE, 0.0);
                 String placeName = data.getStringExtra(SelectPlaceActivity.RESULT_PLACE_NAME);
                 Log.i(TAG, "long: " + longitude + " lat: " + latitude);
-                Toast.makeText(this, "long: " + longitude + " lat: " + latitude, Toast.LENGTH_SHORT).show();
 
                 UUID uuid = UUID.randomUUID();
                 ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), placeName, null, null, null, null, null, null, latitude, longitude, false);
@@ -217,8 +230,7 @@ public class MainActivity extends AppCompatActivity
         } else {
             if (id == R.id.nav_signout) {
                 Log.d(TAG, "Sign out pressed");
-                FirebaseAuth.getInstance().signOut();
-                startLoginActivity();
+                signOut();
             }
 
             if (id == R.id.nav_item_add_location) {
@@ -263,8 +275,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onLocationChanged(Location location) {
         mLastLocation = location;
-
-        Toast.makeText(this, "location changed !", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "location changes " + location.getLongitude() + ", " + location.getLatitude());
     }
 
     @Override
@@ -350,8 +361,17 @@ public class MainActivity extends AppCompatActivity
         wrapper.setSubAdministrativeLocation(subAdmin);
         wrapper.setAdministrativeLocation(admin);
 
+        //FORECAST UPDATED
         bundle.putSerializable(Constants.BUNDLE_FORECAST, wrapper);
+        updateUserData();
+        pushUpdateInfo();
         ((ForecastFragment) mFragmentManager.findFragmentByTag(uuid)).onForecastUpdated(bundle);
+    }
+
+    private void pushUpdateInfo() {
+        Bundle b = new Bundle();
+        b.putString(LogConstants.FA_KEY_INFO_WEATHER_UPDATE, "weather updated");
+        mFirebaseAnalytics.logEvent(LogConstants.FA_TITLE_INFO, b);
     }
 
     private void attachReceiver() {
@@ -392,7 +412,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     protected void stopLocationUpdates() {
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        }
     }
 
     private void startLoginActivity() {
@@ -474,7 +496,41 @@ public class MainActivity extends AppCompatActivity
     private void initData(){
         initGoogleApiClient();
         initLocationRequest();
+        initFirebaseAnalytics();
+        initFirebaseDatabase();
+        initFirebaseAuthAndUser();
+        fromSignInValidation();
         loadAppData();
+    }
+
+    private void initFirebaseAuthAndUser() {
+        mFirebaseAuth = FirebaseAuth.getInstance();
+        if (mFirebaseAuth != null) {
+            mFirebaseUser = mFirebaseAuth.getCurrentUser();
+            if (mFirebaseUser == null) {
+                Toast.makeText(this, "Auth Not Valid", Toast.LENGTH_SHORT).show();
+                signOut();
+            }
+        }
+    }
+
+    private void initFirebaseDatabase() {
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+    }
+
+    private void fromSignInValidation() {
+        Intent i = getIntent();
+        if (i != null && i.hasExtra(User.BUNDLE_NAME)) {
+            Bundle b = new Bundle();
+            b.putString(LogConstants.FA_KEY_INFO_FROM_SIGN_IN, "user come from sign in");
+            mFirebaseAnalytics.logEvent(LogConstants.FA_TITLE_INFO, b);
+            mFromSignIn = true;
+            mSignInBundle = i.getBundleExtra(User.BUNDLE_NAME);
+        }
+    }
+
+    private void initFirebaseAnalytics() {
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
     }
 
     private void initGoogleApiClient() {
@@ -501,18 +557,36 @@ public class MainActivity extends AppCompatActivity
                     mGlobalData = mObjectMapper.readValue(globalData, GlobalData.class);
                     Log.d(TAG, "global data loaded successfully");
                     mWrapperList = mGlobalData.getForecastWrapperList();
+                    mUser = mGlobalData.getUser();
                     if (mWrapperList.isEmpty()) {
-                        UUID uuid = UUID.fromString(TAG);
+                        Log.w(TAG, "forecast data not found on stored data");
+                        UUID uuid = UUID.randomUUID();
                         ForecastWrapper wrapper = new ForecastWrapper(uuid.toString(), Constants.FRAGMENT_NAME_DEFAULT, null, null, null, null, null, null, 0, 0, true);
                         mWrapperList.add(wrapper);
+                    }
+                    if (mUser == null) {
+                        Log.w(TAG, "user data not found on stored data");
+                        if (!mFromSignIn) {
+                            Toast.makeText(this, "re-Authenticate", Toast.LENGTH_SHORT).show();
+                            signOut();
+                        } else {
+                            mUser = new User();
+                            setupUserData();
+                            mGlobalData.setUser(mUser);
+                        }
                     }
                 }
             } else {
                 Log.i(TAG, "first run detected");
                 mGlobalData = new GlobalData();
                 mWrapperList = new ArrayList<>();
+                mUser = new User();
+
+                setupUserData();
+                updateUserData();
 
                 mGlobalData.setForecastWrapperList(mWrapperList);
+                mGlobalData.setUser(mUser);
 
                 //generate first forecast location
                 UUID uuid = UUID.randomUUID();
@@ -525,6 +599,19 @@ public class MainActivity extends AppCompatActivity
         } catch (Exception e) {
             Log.e(TAG, "unexpected exception", e);
         }
+    }
+
+    private void setupUserData() {
+        if (mSignInBundle != null) {
+            mUser.setName(mSignInBundle.getString(User.KEY_NAME));
+            mUser.setEmail(mSignInBundle.getString(User.KEY_EMAIL));
+            mUser.setPictureUrl(mSignInBundle.getString(User.KEY_PICTURE_URL));
+        } else {
+            mUser.setName("not initialize");
+            mUser.setEmail("not initialize");
+            mUser.setPictureUrl("not initialize");
+        }
+        mUser.setJoinDate(new Date().getTime());
     }
 
     private void storeData() {
@@ -596,6 +683,17 @@ public class MainActivity extends AppCompatActivity
         return result;
     }
 
+    private ForecastWrapper getPrimaryWrapper() {
+        ForecastWrapper result = null;
+        for (ForecastWrapper wrapper : mWrapperList) {
+            if (wrapper.isPrimary()) {
+                result = wrapper;
+                break;
+            }
+        }
+        return result;
+    }
+
     private void startGeoCoderService(String uuid) {
         Intent intent = new Intent(this, GeoCoderService.class);
         intent.putExtra(GeoCoderService.TAG, mReceiver);
@@ -623,6 +721,42 @@ public class MainActivity extends AppCompatActivity
         }
         ft.commit();
         mGlobalData.setCurrentActiveUuid(wrapper.getUuid());
+    }
+
+    private void updateUserData() {
+        if (mUser != null) {
+            mUser.setAndroidOs(Util.getAndroidVersion());
+            mUser.setAppVersion(Util.getAppVersion());
+            mUser.setPhoneModel(Util.getDeviceName());
+
+            ForecastWrapper primaryWrapper = getPrimaryWrapper();
+            if (primaryWrapper != null) {
+                mUser.setLocation(primaryWrapper.getSubAdministrativeLocation());
+                mUser.setCountry(primaryWrapper.getCountry());
+            }
+            Log.d(TAG, "updating database " + mFirebaseUser.getUid());
+            DatabaseReference reference = mFirebaseDatabase.getReference(User.FIREBASE_USER_REFERENCE);
+            reference.child(mFirebaseUser.getUid()).setValue(mUser, new DatabaseReference.CompletionListener() {
+                @Override
+                public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                    if (databaseError != null) {
+                        Log.e(TAG, databaseError.getMessage());
+                    } else {
+                        Log.d(TAG, "update db success");
+                    }
+                }
+            });
+        } else {
+            Log.e(TAG, "user null");
+            Bundle b = new Bundle();
+            b.putString(LogConstants.FA_KEY_ERR_USER, "fatal, error user null");
+            mFirebaseAnalytics.logEvent(LogConstants.FA_TITLE_ERROR, b);
+        }
+    }
+
+    private void signOut() {
+        FirebaseAuth.getInstance().signOut();
+        startLoginActivity();
     }
 
     private class ForecastRequestListener implements Callback {

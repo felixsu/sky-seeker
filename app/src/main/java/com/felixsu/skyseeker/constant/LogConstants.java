@@ -15,4 +15,19 @@ public class LogConstants {
     public static final String ON_STOP_LEAVE = "leaving on stop";
 
     public static final String UNEXPECTED_ERROR = "something goes wrong, contact our support";
+
+    //START OF FIREBASE ANALYTICS SECTION
+    public static final String FA_TITLE_ERROR = "error";
+    public static final String FA_TITLE_INFO = "info";
+
+    public static final String FA_KEY_ERR_USER = "error_user";
+    public static final String FA_KEY_ERR_SIGN_IN = "error_sign_in";
+    public static final String FA_KEY_ERR_AUTH = "error_auth";
+
+    public static final String FA_KEY_INFO_FROM_SIGN_IN = "info_from_sign_in";
+    public static final String FA_KEY_INFO_WEATHER_UPDATE = "info_weather_update";
+
+    public static final String FA_KEY_FAV_LOCATION = "fav_location";
+    public static final String FA_KEY_FAV_UNIT = "fav_unit";
+    //END OF FIREBASE ANALYTICS SECTION
 }

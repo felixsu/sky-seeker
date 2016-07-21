@@ -13,6 +13,7 @@ import java.util.List;
 public class GlobalData {
     private List<ForecastWrapper> mForecastWrapperList = new ArrayList<>();
     private String mCurrentActiveUuid;
+    private User mUser;
 
     public GlobalData() {
     }
@@ -31,5 +32,13 @@ public class GlobalData {
 
     public void setCurrentActiveUuid(String currentActiveUuid) {
         mCurrentActiveUuid = currentActiveUuid;
+    }
+
+    public User getUser() {
+        return mUser;
+    }
+
+    public void setUser(User user) {
+        mUser = user;
     }
 }

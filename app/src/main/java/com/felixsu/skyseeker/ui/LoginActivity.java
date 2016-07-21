@@ -11,6 +11,8 @@ import android.widget.Toast;
 
 import com.felixsu.skyseeker.R;
 import com.felixsu.skyseeker.constant.Constants;
+import com.felixsu.skyseeker.constant.LogConstants;
+import com.felixsu.skyseeker.model.User;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -20,6 +22,7 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -40,6 +43,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     private FirebaseAuth mAuth;
     private GoogleSignInOptions mGoogleSignInOptions;
     private GoogleApiClient mGoogleApiClient;
+    private User mUser;
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +87,15 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
             if (result.isSuccess()) {
                 Log.i(TAG, "Sign In Successful");
                 GoogleSignInAccount account = result.getSignInAccount();
+                if (account != null) {
+                    mUser.setEmail(account.getEmail() == null ? "null" : account.getEmail());
+                    mUser.setName(account.getDisplayName());
+                    mUser.setPictureUrl(account.getPhotoUrl() == null ? "null" : account.getPhotoUrl().toString());
+                } else {
+                    Bundle b = new Bundle();
+                    b.putString(LogConstants.FA_KEY_ERR_SIGN_IN, "account null on success");
+                    mFirebaseAnalytics.logEvent(LogConstants.FA_TITLE_ERROR, b);
+                }
                 firebaseAuthWithGoogle(account);
             } else {
                 Log.w(TAG, "sign In error : STATUS " + result.getStatus());
@@ -105,6 +119,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
     private void initData() {
         mAuth = FirebaseAuth.getInstance();
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         mGoogleSignInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(Constants.GOOGLE_WEB_CLIENT_ID)
@@ -115,6 +130,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 .enableAutoManage(this, this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API, mGoogleSignInOptions)
                 .build();
+
+        mUser = new User();
     }
 
     private void initListener() {
@@ -176,6 +193,9 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
                         if (!task.isSuccessful()) {
                             Log.w(TAG, "signInWithCredential", task.getException());
+                            Bundle b = new Bundle();
+                            b.putString(LogConstants.FA_KEY_ERR_AUTH, "sign in with credential error");
+                            mFirebaseAnalytics.logEvent(LogConstants.FA_TITLE_ERROR, b);
                             Toast.makeText(LoginActivity.this, "Authentication failed.",
                                     Toast.LENGTH_SHORT).show();
                         } else {
@@ -191,7 +211,14 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
+        Bundle b = new Bundle();
+        b.putString(User.KEY_EMAIL, mUser.getEmail());
+        b.putString(User.KEY_NAME, mUser.getName());
+        b.putString(User.KEY_PICTURE_URL, mUser.getPictureUrl());
+        intent.putExtra(User.BUNDLE_NAME, b);
+
         startActivity(intent);
     }
 
 }
+
