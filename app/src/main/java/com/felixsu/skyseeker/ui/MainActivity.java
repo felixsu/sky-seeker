@@ -40,7 +40,7 @@ import com.felixsu.skyseeker.model.request.ForecastRequest;
 import com.felixsu.skyseeker.receiver.GeoCoderReceiver;
 import com.felixsu.skyseeker.receiver.Receiver;
 import com.felixsu.skyseeker.service.ForecastService;
-import com.felixsu.skyseeker.service.GeoCoderService;
+import com.felixsu.skyseeker.service.GeocoderService;
 import com.felixsu.skyseeker.ui.fragment.ForecastFragment;
 import com.felixsu.skyseeker.util.Util;
 import com.google.android.gms.common.ConnectionResult;
@@ -306,8 +306,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.d(TAG, "receiving back from geocoderService");
-        String uuid = resultData.getString(GeoCoderService.RESULT_UUID);
+        Log.d(TAG, "receiving back from GeocoderService");
+        String uuid = resultData.getString(GeocoderService.RESULT_UUID);
         String primaryAddress;
         String secondaryAddress;
         String countryCode;
@@ -316,10 +316,10 @@ public class MainActivity extends AppCompatActivity
 
         switch (resultCode) {
             case Constants.RETURN_OK:
-                ArrayList<String> listOfAddress = resultData.getStringArrayList(GeoCoderService.RESULT_ADDRESSES);
-                countryCode = resultData.getString(GeoCoderService.RESULT_COUNTRY_CODE);
-                subAdmin = resultData.getString(GeoCoderService.RESULT_SUB_ADMINISTRATIVE_NAME);
-                admin = resultData.getString(GeoCoderService.RESULT_ADMINISTRATIVE_NAME);
+                ArrayList<String> listOfAddress = resultData.getStringArrayList(GeocoderService.RESULT_ADDRESSES);
+                countryCode = resultData.getString(GeocoderService.RESULT_COUNTRY_CODE);
+                subAdmin = resultData.getString(GeocoderService.RESULT_SUB_ADMINISTRATIVE_NAME);
+                admin = resultData.getString(GeocoderService.RESULT_ADMINISTRATIVE_NAME);
                 int size = listOfAddress.size();
                 if (size > 0) {
                     primaryAddress = listOfAddress.get(0);
@@ -694,13 +694,13 @@ public class MainActivity extends AppCompatActivity
         return result;
     }
 
-    private void startGeoCoderService(String uuid) {
-        Intent intent = new Intent(this, GeoCoderService.class);
-        intent.putExtra(GeoCoderService.TAG, mReceiver);
-        intent.putExtra(GeoCoderService.EXTRA_UUID, uuid);
-        intent.putExtra(GeoCoderService.EXTRA_REQUEST_CODE, GeoCoderService.REQUEST_WITH_LONG_LAT);
-        intent.putExtra(GeoCoderService.EXTRA_LATITUDE, getWrapperWithId(uuid).getLatitude());
-        intent.putExtra(GeoCoderService.EXTRA_LONGITUDE, getWrapperWithId(uuid).getLongitude());
+    private void startGeocoderService(String uuid) {
+        Intent intent = new Intent(this, GeocoderService.class);
+        intent.putExtra(GeocoderService.TAG, mReceiver);
+        intent.putExtra(GeocoderService.EXTRA_UUID, uuid);
+        intent.putExtra(GeocoderService.EXTRA_REQUEST_CODE, GeocoderService.REQUEST_WITH_LONG_LAT);
+        intent.putExtra(GeocoderService.EXTRA_LATITUDE, getWrapperWithId(uuid).getLatitude());
+        intent.putExtra(GeocoderService.EXTRA_LONGITUDE, getWrapperWithId(uuid).getLongitude());
         startService(intent);
 
     }
@@ -779,7 +779,7 @@ public class MainActivity extends AppCompatActivity
                 Forecast forecast = mObjectMapper.readValue(response.body().string(), Forecast.class);
                 ForecastWrapper wrapper = getWrapperWithId(mUuid);
                 wrapper.setForecast(forecast);
-                startGeoCoderService(mUuid);
+                startGeocoderService(mUuid);
             } else {
                 Log.e(TAG, "got response status" + response.code() + "-" + response.body().string());
             }

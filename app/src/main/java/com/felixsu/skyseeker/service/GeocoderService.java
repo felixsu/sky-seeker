@@ -18,9 +18,9 @@ import java.util.Locale;
 /**
  * Created by felixsu on 04/06/2016.
  */
-public class GeoCoderService extends IntentService {
+public class GeocoderService extends IntentService {
 
-    public static final String TAG = GeoCoderService.class.getName();
+    public static final String TAG = GeocoderService.class.getName();
 
     public static final int REQUEST_WITH_LONG_LAT = 2000;
     public static final int REQUEST_WITH_NAME = 2001;
@@ -37,8 +37,8 @@ public class GeoCoderService extends IntentService {
     public static final String RESULT_ADMINISTRATIVE_NAME = "geo-coder-service-administration-name";
     public static final String RESULT_COUNTRY_CODE = "geo-coder-service-result-country-code";
 
-    public GeoCoderService() {
-        super(GeoCoderService.TAG);
+    public GeocoderService() {
+        super(GeocoderService.TAG);
     }
 
     @Override
