@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,6 +56,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.mikhaellopez.circularimageview.CircularImageView;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -98,9 +100,14 @@ public class MainActivity extends AppCompatActivity
     private boolean mFromSignIn = false;
     private Bundle mSignInBundle;
 
+    //View
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
     private Menu mNavigationMenu;
+    private CircularImageView mNavProfilePictureIcon;
+    private TextView mNavGreetingsLabel;
+    private TextView mNavNameLabel;
+    private TextView mNavEmailLabel;
 
     private FragmentManager mFragmentManager;
     private GoogleApiClient mGoogleApiClient;
@@ -122,11 +129,19 @@ public class MainActivity extends AppCompatActivity
         if (isGooglePlayServiceAvailable()) {
             Log.d(TAG, "google play service is available");
             //initData will load all available forecast stored before
+            initView();
             initData();
             initFragment();
             //forecast is filled, available to be read.
             initDrawer();
         }
+    }
+
+    private void initView() {
+        mNavProfilePictureIcon = (CircularImageView) findViewById(R.id.icon_navigationHeader);
+        mNavGreetingsLabel = (TextView) findViewById(R.id.label_navigationHeaderGreetings);
+        mNavNameLabel = (TextView) findViewById(R.id.label_navigationHeaderName);
+        mNavEmailLabel = (TextView) findViewById(R.id.label_navigationHeaderEmail);
     }
 
     @Override
@@ -702,7 +717,6 @@ public class MainActivity extends AppCompatActivity
         intent.putExtra(GeocoderService.EXTRA_LATITUDE, getWrapperWithId(uuid).getLatitude());
         intent.putExtra(GeocoderService.EXTRA_LONGITUDE, getWrapperWithId(uuid).getLongitude());
         startService(intent);
-
     }
 
     private void addNewLocation() {

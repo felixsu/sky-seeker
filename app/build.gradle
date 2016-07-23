@@ -39,6 +39,7 @@ dependencies {
     compile 'com.google.dagger:dagger:2.2'
     compile 'com.android.support:support-v4:24.1.1'
     compile 'com.github.aakira:expandable-layout:1.5.1@aar'
+    compile 'com.mikhaellopez:circularimageview:3.0.2'
 }
 
 apply plugin: 'com.google.gms.google-services'
