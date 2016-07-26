@@ -49,7 +49,7 @@
         </activity>
 
         <service android:name=".service.AuthenticationCheckerService"/>
-        <service android:name=".service.GeoCoderService"/>
+        <service android:name=".service.GeocoderService"/>
 
 
     </application>

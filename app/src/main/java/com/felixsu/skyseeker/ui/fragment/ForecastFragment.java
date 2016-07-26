@@ -60,6 +60,7 @@ public class ForecastFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
+        Log.d(TAG, "pressed " + view.getId());
         switch (view.getId()) {
             case R.id.button_getForecast:
                 updateWeather();
@@ -134,6 +135,7 @@ public class ForecastFragment extends Fragment implements View.OnClickListener {
     }
 
     private void updateWeather(){
+        Log.d(TAG, "entering update weather");
         if (mListener != null) {
             if (mForecastWrapper.isPrimary()) {
                 Location location = mListener.getLocation();
@@ -210,6 +212,7 @@ public class ForecastFragment extends Fragment implements View.OnClickListener {
     }
 
     public void onForecastUpdated(Bundle bundle) {
+        Log.d(TAG, "on weather updated");
         mForecastWrapper = (ForecastWrapper) bundle.getSerializable(Constants.BUNDLE_FORECAST);
         if (mForecastWrapper == null) {
             Log.e(TAG, LogConstants.UNEXPECTED_ERROR);
