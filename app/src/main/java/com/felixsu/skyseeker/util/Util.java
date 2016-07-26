@@ -10,6 +10,9 @@ import android.view.inputmethod.InputMethodManager;
 
 import com.felixsu.skyseeker.BuildConfig;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class Util {
 
     public static String base64Encode(byte[] input, int len) {
@@ -31,6 +34,20 @@ public class Util {
 
     public static int percentValue(double value) {
         return (int) (value * 100);
+    }
+
+    public static String generateGreetings() {
+        SimpleDateFormat sd = new SimpleDateFormat("HH");
+        String hourString = sd.format(new Date());
+        int hourInteger = Integer.parseInt(hourString);
+
+        if (hourInteger >= 0 && hourInteger < 10) {
+            return "Good Morning";
+        } else if (hourInteger >= 10 && hourInteger < 16) {
+            return "Good Afternoon";
+        } else {
+            return "Good Evening";
+        }
     }
 
     public static String getDeviceName() {

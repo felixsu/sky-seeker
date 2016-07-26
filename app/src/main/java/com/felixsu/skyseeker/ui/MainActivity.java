@@ -57,6 +57,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.mikhaellopez.circularimageview.CircularImageView;
+import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -129,19 +130,11 @@ public class MainActivity extends AppCompatActivity
         if (isGooglePlayServiceAvailable()) {
             Log.d(TAG, "google play service is available");
             //initData will load all available forecast stored before
-            initView();
             initData();
             initFragment();
             //forecast is filled, available to be read.
             initDrawer();
         }
-    }
-
-    private void initView() {
-        mNavProfilePictureIcon = (CircularImageView) findViewById(R.id.icon_navigationHeader);
-        mNavGreetingsLabel = (TextView) findViewById(R.id.label_navigationHeaderGreetings);
-        mNavNameLabel = (TextView) findViewById(R.id.label_navigationHeaderName);
-        mNavEmailLabel = (TextView) findViewById(R.id.label_navigationHeaderEmail);
     }
 
     @Override
@@ -445,9 +438,9 @@ public class MainActivity extends AppCompatActivity
     private void initDrawer(){
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         mNavigationView = (NavigationView) findViewById(R.id.nav_view);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        refreshDrawer();
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, mDrawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -465,6 +458,24 @@ public class MainActivity extends AppCompatActivity
 
             MenuItem menuItem = locationHolder.getSubMenu().add(R.id.nav_group_location, id, 0, wrapper.getName());
             menuItem.setIcon(R.drawable.ic_location_on_black_24dp);
+        }
+    }
+
+    private void refreshDrawer() {
+        if (mNavigationView != null) {
+            View headerView = mNavigationView.getHeaderView(0);
+            mNavProfilePictureIcon = (CircularImageView) headerView.findViewById(R.id.icon_navigationHeader);
+            mNavGreetingsLabel = (TextView) headerView.findViewById(R.id.label_navigationHeaderGreetings);
+            mNavNameLabel = (TextView) headerView.findViewById(R.id.label_navigationHeaderName);
+            mNavEmailLabel = (TextView) headerView.findViewById(R.id.label_navigationHeaderEmail);
+
+            String greetings = Util.generateGreetings();
+            mNavGreetingsLabel.setText(greetings);
+            mNavNameLabel.setText(mUser.getName());
+            mNavEmailLabel.setText(mUser.getEmail());
+            Picasso.with(this).load(mUser.getPictureUrl()).into(mNavProfilePictureIcon);
+        } else {
+            Log.w(TAG, "trying refresh null navigation drawer");
         }
     }
 
